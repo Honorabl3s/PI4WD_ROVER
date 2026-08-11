@@ -3,110 +3,123 @@
 import { useState, useEffect, useRef } from 'react';
 
 export default function RobotDashboard() {
-  // Ganti dengan IP Tailscale Pi atau IP lokal
+  // Sesuaikan dengan IP Raspberry Pi / Tailscale milikmu
   const PI_IP = '172.17.19.107'; 
   const streamUrl = `http://${PI_IP}:8080/stream`;
 
-  const [gamepadStatus, setGamepadStatus] = useState("Menunggu...");
+  // Tipe data disederhanakan agar tidak memicu error TS
+  const [controlMode, setControlMode] = useState('gamepad');
+  const [gamepadStatus, setGamepadStatus] = useState("Menunggu Gamepad...");
   const [steering, setSteering] = useState({ x: 0, y: 0 });
   
-  // Referensi untuk WebSocket dengan penambahan tipe TypeScript
-  const wsRef = useRef<WebSocket | null>(null);
+  // Menggunakan 'any' untuk menghindari error pengecekan tipe strict pada WebSocket
+  const wsRef = useRef<any>(null);
+  
+  const keysRef = useRef({ up: false, down: false, left: false, right: false });
 
-  // FUNGSI INI KEMBALI DITAMBAHKAN AGAR TOMBOL BISA BEKERJA
   const forceScanGamepad = () => {
     if (typeof navigator !== "undefined" && navigator.getGamepads) {
       const gamepads = navigator.getGamepads();
       let activeGp = null;
-
       for (let i = 0; i < gamepads.length; i++) {
         if (gamepads[i] !== null) {
           activeGp = gamepads[i];
           break;
         }
       }
-
-if (activeGp) {
-        setGamepadStatus(`🟢 TERHUBUNG: ${activeGp.id.substring(0, 15)}...`);
-        
-        // Joystick Kiri (hanya sumbu X untuk belok)
-        const rawX = activeGp.axes[0];
-        
-        // Membaca Trigger LT dan RT (nilainya 0.0 hingga 1.0)
-        const lt = activeGp.buttons[6].value;
-        const rt = activeGp.buttons[7].value;
-        
-        // Logika Gas: RT positif (Maju), LT negatif (Mundur)
-        const throttle = rt - lt; 
-        
-        const x = Math.abs(rawX) > 0.15 ? Number(rawX.toFixed(2)) : 0;
-        const y = Number(throttle.toFixed(2)); // Kita tetap namakan 'y' agar backend mudah membacanya
-
-        setSteering({ x, y });
-
-        // 3. KIRIM DATA KE RASPBERRY PI
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ x, y }));
-        }
-      }
+      if (activeGp) setGamepadStatus(`🟢 TERHUBUNG: ${activeGp.id.substring(0, 15)}...`);
     }
   };
 
   useEffect(() => {
-    // 1. Buka Koneksi WebSocket ke Pi
     const ws = new WebSocket(`ws://${PI_IP}:8765`);
-    
     ws.onopen = () => console.log("WebSocket Terhubung ke Pi!");
     ws.onclose = () => console.log("WebSocket Terputus.");
     wsRef.current = ws;
 
-    // 2. Loop Joystick
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['ArrowUp', 'w', 'W'].includes(e.key)) keysRef.current.up = true;
+      if (['ArrowDown', 's', 'S'].includes(e.key)) keysRef.current.down = true;
+      if (['ArrowLeft', 'a', 'A'].includes(e.key)) keysRef.current.left = true;
+      if (['ArrowRight', 'd', 'D'].includes(e.key)) keysRef.current.right = true;
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (['ArrowUp', 'w', 'W'].includes(e.key)) keysRef.current.up = false;
+      if (['ArrowDown', 's', 'S'].includes(e.key)) keysRef.current.down = false;
+      if (['ArrowLeft', 'a', 'A'].includes(e.key)) keysRef.current.left = false;
+      if (['ArrowRight', 'd', 'D'].includes(e.key)) keysRef.current.right = false;
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
     const interval = setInterval(() => {
-      if (typeof navigator !== "undefined" && navigator.getGamepads) {
-        const gamepads = navigator.getGamepads();
-        let activeGp = null;
-        for (let i = 0; i < gamepads.length; i++) {
-          if (gamepads[i] !== null) {
-            activeGp = gamepads[i];
-            break;
+      let currentX = 0;
+      let currentY = 0;
+
+      if (controlMode === 'gamepad') {
+        if (typeof navigator !== "undefined" && navigator.getGamepads) {
+          const gamepads = navigator.getGamepads();
+          let activeGp = null;
+          for (let i = 0; i < gamepads.length; i++) {
+            if (gamepads[i] !== null) {
+              activeGp = gamepads[i];
+              break;
+            }
+          }
+
+          if (activeGp) {
+            const rawX = activeGp.axes[0];
+            const lt = activeGp.buttons[6].value;
+            const rt = activeGp.buttons[7].value;
+            
+            const throttle = rt - lt; 
+            currentX = Math.abs(rawX) > 0.15 ? Number(rawX.toFixed(2)) : 0;
+            currentY = Number(throttle.toFixed(2));
           }
         }
+      } else if (controlMode === 'keyboard') {
+        currentY = (keysRef.current.up ? 1 : 0) - (keysRef.current.down ? 1 : 0);
+        currentX = (keysRef.current.right ? 1 : 0) - (keysRef.current.left ? 1 : 0);
+      }
 
-        if (activeGp) {
-          setGamepadStatus(`🟢 TERHUBUNG: ${activeGp.id.substring(0, 15)}...`);
-          const rawX = activeGp.axes[0];
-          const rawY = activeGp.axes[1];
-          
-          const x = Math.abs(rawX) > 0.15 ? Number(rawX.toFixed(2)) : 0;
-          const y = Math.abs(rawY) > 0.15 ? Number(rawY.toFixed(2)) : 0;
+      setSteering({ x: currentX, y: currentY });
 
-          setSteering({ x, y });
-
-          // 3. KIRIM DATA KE RASPBERRY PI
-          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({ x, y }));
-          }
-        }
+      // wsRef dipastikan aman dari TS error
+      if (wsRef.current && wsRef.current.readyState === 1) {
+        wsRef.current.send(JSON.stringify({ x: currentX, y: currentY }));
       }
     }, 100);
 
     return () => {
       clearInterval(interval);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
       if (wsRef.current) wsRef.current.close();
     };
-  }, []);
+  }, [controlMode, PI_IP]); 
   
   return (
     <main className="min-h-screen bg-gray-900 text-white p-8 font-sans">
       <div className="max-w-5xl mx-auto">
-        <header className="mb-8 border-b border-gray-700 pb-4 flex justify-between items-center">
+        <header className="mb-8 border-b border-gray-700 pb-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <h1 className="text-3xl font-bold text-emerald-400">Robot Vision Control</h1>
-          <button 
-            onClick={forceScanGamepad}
-            className="bg-emerald-500 hover:bg-emerald-400 text-gray-900 font-bold py-2 px-6 rounded shadow-lg transition-transform active:scale-95"
-          >
-            🕹️ Pindai Gamepad
-          </button>
+          
+          <div className="flex gap-2 bg-gray-800 p-1 rounded-lg border border-gray-700">
+            <button 
+              onClick={() => setControlMode('gamepad')}
+              className={`py-2 px-4 rounded font-semibold transition-colors ${controlMode === 'gamepad' ? 'bg-emerald-500 text-gray-900' : 'text-gray-400 hover:text-white'}`}
+            >
+              🎮 Gamepad
+            </button>
+            <button 
+              onClick={() => setControlMode('keyboard')}
+              className={`py-2 px-4 rounded font-semibold transition-colors ${controlMode === 'keyboard' ? 'bg-emerald-500 text-gray-900' : 'text-gray-400 hover:text-white'}`}
+            >
+              ⌨️ Keyboard
+            </button>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -122,24 +135,32 @@ if (activeGp) {
           </div>
 
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-xl flex flex-col">
-            <h2 className="text-lg font-semibold mb-4 border-b border-gray-700 pb-2">
-              XBOX Controller
+            <h2 className="text-lg font-semibold mb-4 border-b border-gray-700 pb-2 flex justify-between items-center">
+              <span>Status Kontrol</span>
+              {controlMode === 'gamepad' && (
+                <button onClick={forceScanGamepad} className="text-xs bg-gray-700 hover:bg-gray-600 py-1 px-2 rounded">
+                  Pindai Ulang
+                </button>
+              )}
             </h2>
             
             <div className="flex-1 flex flex-col justify-center gap-6">
               <div className="bg-gray-900 p-3 rounded border border-gray-700 text-sm font-mono text-center">
-                {gamepadStatus}
+                {controlMode === 'keyboard' ? '⌨️ AKTIF: Gunakan W-A-S-D atau Panah' : gamepadStatus}
               </div>
 
               <div className="bg-gray-900 p-4 rounded-lg flex flex-col items-center gap-4 border border-gray-700">
-                <div className="text-xs text-gray-400 text-center mb-2">Left Analog Stick</div>
-                <div className="w-24 h-24 bg-gray-800 rounded-full border-2 border-gray-600 relative">
+                <div className="text-xs text-gray-400 text-center mb-2">Visualizer (X / Y)</div>
+                <div className="w-24 h-24 bg-gray-800 rounded-full border-2 border-gray-600 relative overflow-hidden">
+                  <div className="absolute w-full h-1px bg-gray-700 top-1/2 left-0"></div>
+                  <div className="absolute h-full w-1px bg-gray-700 left-1/2 top-0"></div>
+                  
                   <div 
-                    className="w-6 h-6 bg-emerald-400 rounded-full absolute shadow-[0_0_10px_rgba(52,211,153,0.5)] transition-transform duration-75"
+                    className="w-6 h-6 bg-emerald-400 rounded-full absolute shadow-[0_0_10px_rgba(52,211,153,0.5)] transition-all duration-75"
                     style={{
                       top: '50%',
                       left: '50%',
-                      transform: `translate(calc(-50% + ${steering.x * 40}px), calc(-50% + ${steering.y * 40}px))`
+                      transform: `translate(calc(-50% + ${steering.x * 40}px), calc(-50% + ${-steering.y * 40}px))` 
                     }}
                   ></div>
                 </div>
