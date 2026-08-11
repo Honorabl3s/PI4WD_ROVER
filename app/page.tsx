@@ -67,16 +67,21 @@ export default function RobotDashboard() {
 
           if (activeGp) {
             const rawX = activeGp.axes[0];
-            const maju = activeGp.buttons[6].value;   // RT untuk maju
-            const mundur = activeGp.buttons[7].value; // LT untuk mundur
             
+            // SESUAI PERMINTAAN: RT(7) Maju, LT(6) Mundur
+            const maju = activeGp.buttons[7].value;   
+            const mundur = activeGp.buttons[6].value; 
+            
+            // PERBAIKAN 1: Karena Pi minta nilai minus untuk maju, pengurangannya dibalik (mundur - maju)
             const throttle = mundur - maju; 
+            
             currentX = Math.abs(rawX) > 0.15 ? Number(rawX.toFixed(2)) : 0;
             currentY = Number(throttle.toFixed(2));
           }
         }
       } else if (controlMode === 'keyboard') {
-        currentY = (keysRef.current.up ? 1 : 0) - (keysRef.current.down ? 1 : 0);
+        // PERBAIKAN 2: Keyboard disamakan. W/Up (maju) menghasilkan minus (-1), S/Down menghasilkan plus (+1)
+        currentY = (keysRef.current.down ? 1 : 0) - (keysRef.current.up ? 1 : 0);
         currentX = (keysRef.current.right ? 1 : 0) - (keysRef.current.left ? 1 : 0);
       }
 
@@ -95,13 +100,13 @@ export default function RobotDashboard() {
     };
   }, [controlMode, PI_IP]); 
 
-  // --- PERBAIKAN VISUALIZER ---
-  // Membatasi titik hijau agar tidak menembus batas lingkaran (radius 48px - setengah ukuran dot 12px)
+  // --- PERBAIKAN 3: VISUALIZER ---
   const maxRadius = 36; 
-  // Nilai input stik (-1 sampai 1) dikali dengan radius maksimal
   const dotX = steering.x * maxRadius;
-  // Sumbu Y dibalik (* -1) karena di CSS titik Y=0 ada di atas, sedangkan maju (positif) inginnya ke atas
-  const dotY = steering.y * -1 * maxRadius;
+  
+  // Karena 'maju' nilainya sudah minus (-), dan di CSS nilai minus (-) membuat titik NAIK KE ATAS,
+  // maka kita HAPUS perkalian (* -1) yang sebelumnya. Sekarang titiknya akan maju sempurna!
+  const dotY = steering.y * maxRadius;
 
   return (
     <main className="min-h-screen bg-gray-900 text-white p-8 font-sans">
@@ -132,7 +137,6 @@ export default function RobotDashboard() {
               Live Feed
             </h2>
             <div className="aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center border border-gray-900 relative">
-              {/* PERBAIKAN KAMERA HP: Menggunakan img standar dengan error fallback */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src={streamUrl} 
@@ -163,20 +167,14 @@ export default function RobotDashboard() {
 
               <div className="bg-gray-900 p-4 rounded-lg flex flex-col items-center gap-4 border border-gray-700">
                 <div className="text-xs text-gray-400 text-center mb-2">Visualizer (X / Y)</div>
-                
-                {/* PERBAIKAN VISUALIZER CSS */}
                 <div className="w-24 h-24 bg-gray-800 rounded-full border-2 border-gray-600 relative overflow-hidden flex items-center justify-center">
-                  {/* Grid Crosshair Tengah */}
                   <div className="absolute w-full h-1px bg-gray-600"></div>
                   <div className="absolute h-full w-1px bg-gray-600"></div>
-                  
-                  {/* Titik Hijau */}
                   <div 
                     className="w-6 h-6 bg-emerald-400 rounded-full absolute shadow-[0_0_10px_rgba(52,211,153,0.5)] transition-all duration-75"
                     style={{ transform: `translate(${dotX}px, ${dotY}px)` }}
                   ></div>
                 </div>
-
                 <div className="font-mono text-sm mt-2 flex flex-col items-center text-emerald-400">
                   <span>X: {steering.x}</span>
                   <span>Y: {steering.y}</span>
