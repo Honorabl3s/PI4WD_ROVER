@@ -70,7 +70,7 @@ export default function RobotDashboard() {
             const maju = activeGp.buttons[6].value;   // RT untuk maju
             const mundur = activeGp.buttons[7].value; // LT untuk mundur
             
-            const throttle = maju - mundur; 
+            const throttle = mundur - maju; 
             currentX = Math.abs(rawX) > 0.15 ? Number(rawX.toFixed(2)) : 0;
             currentY = Number(throttle.toFixed(2));
           }
