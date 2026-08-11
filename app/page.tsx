@@ -7,12 +7,10 @@ export default function RobotDashboard() {
   const PI_IP = '172.17.19.107'; 
   const streamUrl = `http://${PI_IP}:8080/stream`;
 
-  // Tipe data disederhanakan agar tidak memicu error TS
   const [controlMode, setControlMode] = useState('gamepad');
   const [gamepadStatus, setGamepadStatus] = useState("Menunggu Gamepad...");
   const [steering, setSteering] = useState({ x: 0, y: 0 });
   
-  // Menggunakan 'any' untuk menghindari error pengecekan tipe strict pada WebSocket
   const wsRef = useRef<any>(null);
   
   const keysRef = useRef({ up: false, down: false, left: false, right: false });
@@ -71,10 +69,12 @@ export default function RobotDashboard() {
 
           if (activeGp) {
             const rawX = activeGp.axes[0];
-            const lt = activeGp.buttons[6].value;
-            const rt = activeGp.buttons[7].value;
             
-            const throttle = rt - lt; 
+            // PERUBAHAN LOGIKA GAS SESUAI PERMINTAANMU
+            const maju = activeGp.buttons[7].value;   // Tombol 7 (RT) untuk maju
+            const mundur = activeGp.buttons[6].value; // Tombol 6 (LT) untuk mundur
+            
+            const throttle = maju - mundur; 
             currentX = Math.abs(rawX) > 0.15 ? Number(rawX.toFixed(2)) : 0;
             currentY = Number(throttle.toFixed(2));
           }
@@ -86,7 +86,6 @@ export default function RobotDashboard() {
 
       setSteering({ x: currentX, y: currentY });
 
-      // wsRef dipastikan aman dari TS error
       if (wsRef.current && wsRef.current.readyState === 1) {
         wsRef.current.send(JSON.stringify({ x: currentX, y: currentY }));
       }
