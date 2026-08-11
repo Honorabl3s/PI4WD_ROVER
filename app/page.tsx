@@ -70,9 +70,9 @@ export default function RobotDashboard() {
           if (activeGp) {
             const rawX = activeGp.axes[0];
             
-            // PERUBAHAN LOGIKA GAS SESUAI PERMINTAANMU
-            const maju = activeGp.buttons[7].value;   // Tombol 7 (RT) untuk maju
-            const mundur = activeGp.buttons[6].value; // Tombol 6 (LT) untuk mundur
+            // PERUBAHAN: Index 6 dan 7 sudah ditukar posisinya!
+            const maju = activeGp.buttons[6].value;   // RT untuk maju (Index 6)
+            const mundur = activeGp.buttons[7].value; // LT untuk mundur (Index 7)
             
             const throttle = maju - mundur; 
             currentX = Math.abs(rawX) > 0.15 ? Number(rawX.toFixed(2)) : 0;
