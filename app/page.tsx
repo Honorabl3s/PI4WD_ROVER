@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 
 export default function RobotDashboard() {
-  // Sesuaikan dengan IP Raspberry Pi / Tailscale milikmu
   const PI_IP = '172.17.19.107'; 
   const streamUrl = `http://${PI_IP}:8080/stream`;
 
@@ -12,7 +11,6 @@ export default function RobotDashboard() {
   const [steering, setSteering] = useState({ x: 0, y: 0 });
   
   const wsRef = useRef<any>(null);
-  
   const keysRef = useRef({ up: false, down: false, left: false, right: false });
 
   const forceScanGamepad = () => {
@@ -69,10 +67,8 @@ export default function RobotDashboard() {
 
           if (activeGp) {
             const rawX = activeGp.axes[0];
-            
-            // PERUBAHAN: Index 6 dan 7 sudah ditukar posisinya!
-            const maju = activeGp.buttons[6].value;   // RT untuk maju (Index 6)
-            const mundur = activeGp.buttons[7].value; // LT untuk mundur (Index 7)
+            const maju = activeGp.buttons[6].value;   // RT untuk maju
+            const mundur = activeGp.buttons[7].value; // LT untuk mundur
             
             const throttle = maju - mundur; 
             currentX = Math.abs(rawX) > 0.15 ? Number(rawX.toFixed(2)) : 0;
@@ -98,7 +94,15 @@ export default function RobotDashboard() {
       if (wsRef.current) wsRef.current.close();
     };
   }, [controlMode, PI_IP]); 
-  
+
+  // --- PERBAIKAN VISUALIZER ---
+  // Membatasi titik hijau agar tidak menembus batas lingkaran (radius 48px - setengah ukuran dot 12px)
+  const maxRadius = 36; 
+  // Nilai input stik (-1 sampai 1) dikali dengan radius maksimal
+  const dotX = steering.x * maxRadius;
+  // Sumbu Y dibalik (* -1) karena di CSS titik Y=0 ada di atas, sedangkan maju (positif) inginnya ke atas
+  const dotY = steering.y * -1 * maxRadius;
+
   return (
     <main className="min-h-screen bg-gray-900 text-white p-8 font-sans">
       <div className="max-w-5xl mx-auto">
@@ -127,9 +131,18 @@ export default function RobotDashboard() {
               <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
               Live Feed
             </h2>
-            <div className="aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center border border-gray-900">
+            <div className="aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center border border-gray-900 relative">
+              {/* PERBAIKAN KAMERA HP: Menggunakan img standar dengan error fallback */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={streamUrl} alt="Robot view" className="w-full h-full object-cover" />
+              <img 
+                src={streamUrl} 
+                alt="Robot view" 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement!.innerHTML = '<div class="text-red-400 text-center p-4">Kamera gagal dimuat.<br/>Pastikan Pi dan HP berada dalam jaringan Tailscale/Wi-Fi yang sama.</div>';
+                }}
+              />
             </div>
           </div>
 
@@ -150,19 +163,20 @@ export default function RobotDashboard() {
 
               <div className="bg-gray-900 p-4 rounded-lg flex flex-col items-center gap-4 border border-gray-700">
                 <div className="text-xs text-gray-400 text-center mb-2">Visualizer (X / Y)</div>
-                <div className="w-24 h-24 bg-gray-800 rounded-full border-2 border-gray-600 relative overflow-hidden">
-                  <div className="absolute w-full h-1px bg-gray-700 top-1/2 left-0"></div>
-                  <div className="absolute h-full w-1px bg-gray-700 left-1/2 top-0"></div>
+                
+                {/* PERBAIKAN VISUALIZER CSS */}
+                <div className="w-24 h-24 bg-gray-800 rounded-full border-2 border-gray-600 relative overflow-hidden flex items-center justify-center">
+                  {/* Grid Crosshair Tengah */}
+                  <div className="absolute w-full h-[1px] bg-gray-600"></div>
+                  <div className="absolute h-full w-[1px] bg-gray-600"></div>
                   
+                  {/* Titik Hijau */}
                   <div 
                     className="w-6 h-6 bg-emerald-400 rounded-full absolute shadow-[0_0_10px_rgba(52,211,153,0.5)] transition-all duration-75"
-                    style={{
-                      top: '50%',
-                      left: '50%',
-                      transform: `translate(calc(-50% + ${steering.x * 40}px), calc(-50% + ${-steering.y * 40}px))` 
-                    }}
+                    style={{ transform: `translate(${dotX}px, ${dotY}px)` }}
                   ></div>
                 </div>
+
                 <div className="font-mono text-sm mt-2 flex flex-col items-center text-emerald-400">
                   <span>X: {steering.x}</span>
                   <span>Y: {steering.y}</span>
