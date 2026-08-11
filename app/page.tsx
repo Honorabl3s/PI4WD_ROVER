@@ -167,8 +167,8 @@ export default function RobotDashboard() {
                 {/* PERBAIKAN VISUALIZER CSS */}
                 <div className="w-24 h-24 bg-gray-800 rounded-full border-2 border-gray-600 relative overflow-hidden flex items-center justify-center">
                   {/* Grid Crosshair Tengah */}
-                  <div className="absolute w-full h-[1px] bg-gray-600"></div>
-                  <div className="absolute h-full w-[1px] bg-gray-600"></div>
+                  <div className="absolute w-full h-1px bg-gray-600"></div>
+                  <div className="absolute h-full w-1px bg-gray-600"></div>
                   
                   {/* Titik Hijau */}
                   <div 
