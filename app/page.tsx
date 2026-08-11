@@ -1,14 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function RobotDashboard() {
-  const streamUrl = 'http://172.17.19.107:8080/stream';
+  // Ganti dengan IP Tailscale Pi atau IP lokal
+  const PI_IP = '172.17.19.107'; 
+  const streamUrl = `http://${PI_IP}:8080/stream`;
 
-  const [gamepadStatus, setGamepadStatus] = useState("Menunggu pemindaian...");
+  const [gamepadStatus, setGamepadStatus] = useState("Menunggu...");
   const [steering, setSteering] = useState({ x: 0, y: 0 });
+  
+  // Referensi untuk WebSocket dengan penambahan tipe TypeScript
+  const wsRef = useRef<WebSocket | null>(null);
 
-  // Fungsi untuk memaksa baca secara manual saat tombol diklik
+  // FUNGSI INI KEMBALI DITAMBAHKAN AGAR TOMBOL BISA BEKERJA
   const forceScanGamepad = () => {
     if (typeof navigator !== "undefined" && navigator.getGamepads) {
       const gamepads = navigator.getGamepads();
@@ -21,16 +26,41 @@ export default function RobotDashboard() {
         }
       }
 
-      if (activeGp) {
-        setGamepadStatus(`🟢 SUKSES DITEMUKAN: ${activeGp.id.substring(0, 20)}`);
-      } else {
-        setGamepadStatus("🔴 TETAP KOSONG. Pastikan URL adalah localhost:3000!");
-        alert("Gamepad tidak terdeteksi oleh kode. Pastikan kamu membuka web via http://localhost:3000");
+if (activeGp) {
+        setGamepadStatus(`🟢 TERHUBUNG: ${activeGp.id.substring(0, 15)}...`);
+        
+        // Joystick Kiri (hanya sumbu X untuk belok)
+        const rawX = activeGp.axes[0];
+        
+        // Membaca Trigger LT dan RT (nilainya 0.0 hingga 1.0)
+        const lt = activeGp.buttons[6].value;
+        const rt = activeGp.buttons[7].value;
+        
+        // Logika Gas: RT positif (Maju), LT negatif (Mundur)
+        const throttle = rt - lt; 
+        
+        const x = Math.abs(rawX) > 0.15 ? Number(rawX.toFixed(2)) : 0;
+        const y = Number(throttle.toFixed(2)); // Kita tetap namakan 'y' agar backend mudah membacanya
+
+        setSteering({ x, y });
+
+        // 3. KIRIM DATA KE RASPBERRY PI
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ x, y }));
+        }
       }
     }
   };
 
   useEffect(() => {
+    // 1. Buka Koneksi WebSocket ke Pi
+    const ws = new WebSocket(`ws://${PI_IP}:8765`);
+    
+    ws.onopen = () => console.log("WebSocket Terhubung ke Pi!");
+    ws.onclose = () => console.log("WebSocket Terputus.");
+    wsRef.current = ws;
+
+    // 2. Loop Joystick
     const interval = setInterval(() => {
       if (typeof navigator !== "undefined" && navigator.getGamepads) {
         const gamepads = navigator.getGamepads();
@@ -43,8 +73,7 @@ export default function RobotDashboard() {
         }
 
         if (activeGp) {
-          setGamepadStatus(`🟢 TERHUBUNG: ${activeGp.id.substring(0, 20)}...`);
-          
+          setGamepadStatus(`🟢 TERHUBUNG: ${activeGp.id.substring(0, 15)}...`);
           const rawX = activeGp.axes[0];
           const rawY = activeGp.axes[1];
           
@@ -52,13 +81,21 @@ export default function RobotDashboard() {
           const y = Math.abs(rawY) > 0.15 ? Number(rawY.toFixed(2)) : 0;
 
           setSteering({ x, y });
+
+          // 3. KIRIM DATA KE RASPBERRY PI
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({ x, y }));
+          }
         }
       }
     }, 100);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (wsRef.current) wsRef.current.close();
+    };
   }, []);
-
+  
   return (
     <main className="min-h-screen bg-gray-900 text-white p-8 font-sans">
       <div className="max-w-5xl mx-auto">
