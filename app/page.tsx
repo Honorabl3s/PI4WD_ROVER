@@ -136,24 +136,26 @@ export default function RobotDashboard() {
               <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
               Live Feed
             </h2>
-           <div className="aspect-video bg-black rounded-lg overflow-hidden border border-gray-900 relative">
-{/* Ubah aspect-video menjadi aspect-[4/3] jika lensamu berformat 4:3. Biarkan aspect-video jika 16:9. */}
-<div className="aspect-[4/3] md:aspect-video w-full bg-black rounded-lg overflow-hidden border border-gray-900 relative">
-  {/* eslint-disable-next-line @next/next/no-img-element */}
-  <img 
-    src={streamUrl} 
-    alt="Robot view" 
-    className="absolute top-0 left-0 h-full max-w-none object-cover"
-    style={{ 
-      width: '200%', 
-      objectPosition: 'left center' 
-    }}
-    onError={(e) => {
-      e.currentTarget.style.display = 'none';
-      e.currentTarget.parentElement!.innerHTML = '<div class="text-red-400 text-center p-4">Kamera gagal dimuat.<br/>Pastikan Pi dan HP berada dalam jaringan Tailscale/Wi-Fi yang sama.</div>';
-    }}
-  />
-</div>
+            
+            {/* --- CONTAINER KAMERA YANG SUDAH DIPERBAIKI --- */}
+            <div className="aspect-4/3 md:aspect-video w-full bg-black rounded-lg overflow-hidden border border-gray-900 relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={streamUrl} 
+                alt="Robot view" 
+                className="absolute top-0 left-0 h-full max-w-none object-cover"
+                style={{ 
+                  width: '200%', 
+                  objectPosition: 'left center' 
+                }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.parentElement!.innerHTML = '<div class="text-red-400 text-center p-4">Kamera gagal dimuat.<br/>Pastikan Pi dan HP berada dalam jaringan Tailscale/Wi-Fi yang sama.</div>';
+                }}
+              />
+            </div>
+            {/* ---------------------------------------------- */}
+
           </div>
 
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-xl flex flex-col">
