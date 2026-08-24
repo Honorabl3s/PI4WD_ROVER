@@ -136,18 +136,20 @@ export default function RobotDashboard() {
               <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
               Live Feed
             </h2>
-            <div className="aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center border border-gray-900 relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={streamUrl} 
-                alt="Robot view" 
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.parentElement!.innerHTML = '<div class="text-red-400 text-center p-4">Kamera gagal dimuat.<br/>Pastikan Pi dan HP berada dalam jaringan Tailscale/Wi-Fi yang sama.</div>';
-                }}
-              />
-            </div>
+           <div className="aspect-video bg-black rounded-lg overflow-hidden border border-gray-900 relative">
+  {/* eslint-disable-next-line @next/next/no-img-element */}
+  <img 
+    src={streamUrl} 
+    alt="Robot view" 
+    // PERUBAHAN DI SINI: Posisi absolut ke kiri, hilangkan max-width, dan set object-position ke kiri
+    className="absolute top-0 left-0 h-full max-w-none object-cover"
+    style={{ width: '200%', objectPosition: 'left' }}
+    onError={(e) => {
+      e.currentTarget.style.display = 'none';
+      e.currentTarget.parentElement!.innerHTML = '<div class="text-red-400 text-center p-4">Kamera gagal dimuat.<br/>Pastikan Pi dan HP berada dalam jaringan Tailscale/Wi-Fi yang sama.</div>';
+    }}
+  />
+</div>
           </div>
 
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-xl flex flex-col">
