@@ -137,13 +137,17 @@ export default function RobotDashboard() {
               Live Feed
             </h2>
            <div className="aspect-video bg-black rounded-lg overflow-hidden border border-gray-900 relative">
+{/* Ubah aspect-video menjadi aspect-[4/3] jika lensamu berformat 4:3. Biarkan aspect-video jika 16:9. */}
+<div className="aspect-[4/3] md:aspect-video w-full bg-black rounded-lg overflow-hidden border border-gray-900 relative">
   {/* eslint-disable-next-line @next/next/no-img-element */}
   <img 
     src={streamUrl} 
     alt="Robot view" 
-    // PERUBAHAN DI SINI: Posisi absolut ke kiri, hilangkan max-width, dan set object-position ke kiri
     className="absolute top-0 left-0 h-full max-w-none object-cover"
-    style={{ width: '200%', objectPosition: 'left' }}
+    style={{ 
+      width: '200%', 
+      objectPosition: 'left center' 
+    }}
     onError={(e) => {
       e.currentTarget.style.display = 'none';
       e.currentTarget.parentElement!.innerHTML = '<div class="text-red-400 text-center p-4">Kamera gagal dimuat.<br/>Pastikan Pi dan HP berada dalam jaringan Tailscale/Wi-Fi yang sama.</div>';
