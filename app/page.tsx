@@ -9,7 +9,8 @@ export default function RobotDashboard() {
   const [controlMode, setControlMode] = useState('gamepad');
   const [gamepadStatus, setGamepadStatus] = useState("Menunggu Gamepad...");
   const [steering, setSteering] = useState({ x: 0, y: 0 });
-  
+  const [obstacleWarning, setObstacleWarning] = useState(false);
+
   const wsRef = useRef<any>(null);
   const keysRef = useRef({ up: false, down: false, left: false, right: false });
 
@@ -31,6 +32,17 @@ export default function RobotDashboard() {
     const ws = new WebSocket(`ws://${PI_IP}:8765`);
     ws.onopen = () => console.log("WebSocket Terhubung ke Pi!");
     ws.onclose = () => console.log("WebSocket Terputus.");
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        // Jika data yang dikirim adalah jarak, dan nilainya menembus threshold (misal 150)
+        if (data.type === 'distance') {
+          setObstacleWarning(data.value > 150);
+        }
+      } catch (e) {
+        console.error("Gagal membaca pesan dari Pi:", e);
+      }
+    };
     wsRef.current = ws;
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -140,6 +152,16 @@ export default function RobotDashboard() {
             {/* --- CONTAINER KAMERA YANG SUDAH DIPERBAIKI --- */}
             <div className="aspect-4/3 md:aspect-video w-full bg-black rounded-lg overflow-hidden border border-gray-900 relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
+              {/* --- OVERLAY PERINGATAN (Akan muncul hanya jika obstacleWarning bernilai true) --- */}
+                {obstacleWarning && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-red-600/30 backdrop-blur-sm transition-all duration-300">
+                    <div className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold text-xl md:text-3xl animate-bounce shadow-[0_0_30px_rgba(220,38,38,0.9)] border-4 border-red-300 flex items-center gap-3">
+                      <span>⚠️</span>
+                      AWAS! OBJEK TERLALU DEKAT
+                    </div>
+                  </div>
+                )}
+                {/* ----------------------------------------------------------------------------- */}
               <img 
                 src={streamUrl} 
                 alt="Robot view" 
