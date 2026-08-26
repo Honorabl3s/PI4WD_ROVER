@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 export default function RobotDashboard() {
-  const PI_IP = '172.17.19.107'; 
+  const PI_IP = '172.17.22.250';
   const streamUrl = `http://${PI_IP}:8080/stream`;
 
   const [controlMode, setControlMode] = useState('gamepad');
