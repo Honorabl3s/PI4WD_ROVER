@@ -3,14 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 
 export default function RobotDashboard() {
-  const PI_IP = '172.17.22.250';
+  const PI_IP = '172.17.19.107'; 
   const streamUrl = `http://${PI_IP}:8080/stream`;
 
   const [controlMode, setControlMode] = useState('gamepad');
   const [gamepadStatus, setGamepadStatus] = useState("Menunggu Gamepad...");
   const [steering, setSteering] = useState({ x: 0, y: 0 });
-  const [obstacleWarning, setObstacleWarning] = useState(false);
-
+  
   const wsRef = useRef<any>(null);
   const keysRef = useRef({ up: false, down: false, left: false, right: false });
 
@@ -32,17 +31,6 @@ export default function RobotDashboard() {
     const ws = new WebSocket(`ws://${PI_IP}:8765`);
     ws.onopen = () => console.log("WebSocket Terhubung ke Pi!");
     ws.onclose = () => console.log("WebSocket Terputus.");
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        // Jika data yang dikirim adalah jarak, dan nilainya menembus threshold (misal 150)
-        if (data.type === 'distance') {
-          setObstacleWarning(data.value > 150);
-        }
-      } catch (e) {
-        console.error("Gagal membaca pesan dari Pi:", e);
-      }
-    };
     wsRef.current = ws;
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -148,17 +136,6 @@ export default function RobotDashboard() {
               <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
               Live Feed
             </h2>
-            
-      </div>
-       
-            {/* --- CONTAINER KAMERA YANG SUDAH DIPERBAIKI --- */}
-<div className="lg:col-span-2 bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-xl">
-            <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
-              <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
-              Live Feed
-            </h2>
-            
-            {/* --- CONTAINER KAMERA NORMAL --- */}
             <div className="aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center border border-gray-900 relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
@@ -171,8 +148,6 @@ export default function RobotDashboard() {
                 }}
               />
             </div>
-            {/* ------------------------------- */}
-
           </div>
 
           <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-xl flex flex-col">
