@@ -149,34 +149,29 @@ export default function RobotDashboard() {
               Live Feed
             </h2>
             
+      </div>
+       
             {/* --- CONTAINER KAMERA YANG SUDAH DIPERBAIKI --- */}
-            <div className="aspect-4/3 md:aspect-video w-full bg-black rounded-lg overflow-hidden border border-gray-900 relative">
+<div className="lg:col-span-2 bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-xl">
+            <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
+              <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
+              Live Feed
+            </h2>
+            
+            {/* --- CONTAINER KAMERA NORMAL --- */}
+            <div className="aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center border border-gray-900 relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {/* --- OVERLAY PERINGATAN (Akan muncul hanya jika obstacleWarning bernilai true) --- */}
-                {obstacleWarning && (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-red-600/30 backdrop-blur-sm transition-all duration-300">
-                    <div className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold text-xl md:text-3xl animate-bounce shadow-[0_0_30px_rgba(220,38,38,0.9)] border-4 border-red-300 flex items-center gap-3">
-                      <span>⚠️</span>
-                      AWAS! OBJEK TERLALU DEKAT
-                    </div>
-                  </div>
-                )}
-                {/* ----------------------------------------------------------------------------- */}
               <img 
                 src={streamUrl} 
                 alt="Robot view" 
-                className="absolute top-0 left-0 h-full max-w-none object-cover"
-                style={{ 
-                  width: '200%', 
-                  objectPosition: 'left center' 
-                }}
+                className="w-full h-full object-cover"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                   e.currentTarget.parentElement!.innerHTML = '<div class="text-red-400 text-center p-4">Kamera gagal dimuat.<br/>Pastikan Pi dan HP berada dalam jaringan Tailscale/Wi-Fi yang sama.</div>';
                 }}
               />
             </div>
-            {/* ---------------------------------------------- */}
+            {/* ------------------------------- */}
 
           </div>
 
