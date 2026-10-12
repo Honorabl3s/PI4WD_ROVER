@@ -626,7 +626,7 @@ export default function RobotDashboard() {
             {/* KIRI: Tombol Kiri & Kanan (Steering) */}
             <div className="flex gap-1 md:gap-2 pointer-events-auto shadow-2xl rounded-2xl">
               <button 
-                onPointerDown={() => { touchStateRef.current.turn = -0.6; }}
+                onPointerDown={() => { touchStateRef.current.turn = 1; }}
                 onPointerUp={() => { touchStateRef.current.turn = 0; }}
                 onPointerLeave={() => { touchStateRef.current.turn = 0; }}
                 className="w-16 h-20 md:w-20 md:h-24 bg-red-600/50 active:bg-red-500 flex items-center justify-center rounded-l-xl border-r border-red-800/30 backdrop-blur-sm transition-colors"
@@ -634,7 +634,7 @@ export default function RobotDashboard() {
                 <svg className="w-8 h-8 md:w-10 md:h-10 text-white/80 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7v14z"/></svg>
               </button>
               <button 
-                onPointerDown={() => { touchStateRef.current.turn = 0.6; }}
+                onPointerDown={() => { touchStateRef.current.turn = 1; }}
                 onPointerUp={() => { touchStateRef.current.turn = 0; }}
                 onPointerLeave={() => { touchStateRef.current.turn = 0; }}
                 className="w-16 h-20 md:w-20 md:h-24 bg-red-600/50 active:bg-red-500 flex items-center justify-center rounded-r-xl backdrop-blur-sm transition-colors"
@@ -666,9 +666,9 @@ export default function RobotDashboard() {
             {/* KANAN: Tombol Atas & Bawah (Throttle) */}
             <div className="flex flex-col gap-1 md:gap-2 pointer-events-auto shadow-2xl rounded-2xl">
               <button 
-                onPointerDown={() => { touchStateRef.current.throttle = -0.6; }}
+                onPointerDown={() => { touchStateRef.current.throttle = -1; }}
                 onPointerUp={() => { touchStateRef.current.throttle = 0; }}
-                onPointerLeave={() => { touchStateRef.current.throttle = 0; }}
+                onPointerLeave={() => { touchStateRef.current.throttle = 1; }}
                 className="w-20 h-16 md:w-24 md:h-20 bg-red-600/50 active:bg-red-500 flex items-center justify-center rounded-t-xl border-b border-red-800/30 backdrop-blur-sm transition-colors"
               >
                 <svg className="w-8 h-8 md:w-10 md:h-10 text-white/80 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7H5z"/></svg>
