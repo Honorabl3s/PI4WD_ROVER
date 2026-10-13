@@ -2,23 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react';
 
-// ============================================================
-// HELPER
-// ============================================================
 const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-// ============================================================
 // KONFIGURASI
-// ============================================================
 const RECORD_INTERVAL_MS = 50;
 const DIRECTION_BRAKE_MS = 600;
 const MAX_STEP_TIMEOUT_MS = 15000;
 const LATENCY_COMPENSATION_TICKS = 3;
 
-// ============================================================
 // TYPE
-// ============================================================
 type Steering = {
   x: number;
   y: number;
@@ -50,7 +43,7 @@ export default function RobotDashboard() {
   const [ticks, setTicks] = useState({ l: 0, r: 0 });
   const [isRecordingUI, setIsRecordingUI] = useState(false);
   const [isPlayingUI, setIsPlayingUI] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false); // State Fullscreen
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const currentTicksRef = useRef({ l: 0, r: 0 });
   const lastRecordedTicksRef = useRef({ l: 0, r: 0 });
@@ -253,7 +246,7 @@ export default function RobotDashboard() {
     }
   };
 
-  // Fungsi Full-Screen
+  // Full-Screen
   const enterFullscreen = () => {
     const elem = document.documentElement;
     if (elem.requestFullscreen) {
@@ -268,7 +261,6 @@ export default function RobotDashboard() {
   };
 
   useEffect(() => {
-    // Sinkronisasi status fullscreen dari sistem
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
@@ -329,7 +321,6 @@ export default function RobotDashboard() {
         currentY = (keysRef.current.down ? 1 : 0) - (keysRef.current.up ? 1 : 0);
         currentX = (keysRef.current.right ? 1 : 0) - (keysRef.current.left ? 1 : 0);
       } else if (controlMode === 'touch' || isFullscreen) {
-        // Kontrol layar sentuh aktif baik di mode touch biasa maupun fullscreen
         currentX = touchStateRef.current.turn;
         currentY = touchStateRef.current.throttle;
       }
@@ -442,7 +433,7 @@ export default function RobotDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           
-          {/* KOLOM KIRI (KAMERA & TOUCH CONTROLLER) */}
+          {/* (KAMERA & TOUCH CONTROLLER) */}
           <div className="lg:col-span-2 flex flex-col gap-4 md:gap-6">
             
             <div className="bg-slate-900/60 rounded-3xl p-3 md:p-4 border border-slate-800 shadow-xl backdrop-blur-sm">
@@ -450,7 +441,7 @@ export default function RobotDashboard() {
                 <h2 className="text-sm font-bold flex items-center gap-2 text-slate-300 uppercase tracking-widest">
                   <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Live Feed
                 </h2>
-                {/* TOMBOL PEMICU FULL-SCREEN */}
+                {/* TOMBOL FULL-SCREEN */}
                 <button 
                   onClick={enterFullscreen}
                   className="bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-400 border border-emerald-500/50 text-[10px] font-bold px-3 py-1 rounded-lg transition-colors flex items-center gap-1"
@@ -460,12 +451,12 @@ export default function RobotDashboard() {
                 </button>
               </div>
               <div className="aspect-video bg-black rounded-2xl overflow-hidden flex items-center justify-center border border-slate-950 shadow-inner relative">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                
                 <img src={streamUrl} alt="Robot view" className="w-full h-full object-contain pointer-events-auto" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               </div>
             </div>
 
-            {/* DUAL-PAD SPLIT CONTROLLER UI BAWAAN */}
+            {/* DUAL-PAD */}
             {controlMode === 'touch' && (
               <div className="bg-slate-900/80 p-4 md:p-6 rounded-3xl border border-slate-800 shadow-2xl flex flex-row justify-around items-center backdrop-blur-md select-none">
                 
@@ -603,8 +594,6 @@ export default function RobotDashboard() {
       {isFullscreen && (
         <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center overflow-hidden touch-none select-none">
           
-          {/* Live Feed Video Background */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src={streamUrl} 
             alt="Robot Fullscreen" 
@@ -612,7 +601,6 @@ export default function RobotDashboard() {
             onError={(e) => { e.currentTarget.style.display = 'none'; }}
           />
 
-          {/* Tombol Keluar (Pojok Kanan Atas) */}
           <button 
             onClick={exitFullscreen}
             className="absolute top-4 right-4 z-[101] bg-white/10 hover:bg-white/30 px-4 py-2 rounded-full text-white text-xs font-bold backdrop-blur-md pointer-events-auto border border-white/20 shadow-lg"
@@ -623,7 +611,7 @@ export default function RobotDashboard() {
           {/* AREA KONTROL OVERLAY */}
           <div className="absolute inset-0 z-[101] flex flex-row items-end justify-between px-6 md:px-12 pb-6 md:pb-8 pointer-events-none">
             
-            {/* KIRI: Tombol Kiri & Kanan (Steering) */}
+            {/* KIRI: Tombol Kiri & Kanan*/}
             <div className="flex gap-1 md:gap-2 pointer-events-auto shadow-2xl rounded-2xl">
               <button 
                 onPointerDown={() => { touchStateRef.current.turn = -1; }}
@@ -645,25 +633,25 @@ export default function RobotDashboard() {
 
             {/* TENGAH: 4 Tombol Aksi (D-Pad Style) */}
             <div className="relative w-28 h-28 md:w-36 md:h-36 pointer-events-auto mb-2">
-              {/* Tombol Atas (Rekam) */}
+              {/*(Rekam) */}
               <button onClick={() => handleTouchAction('RECORD')} className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 md:w-12 md:h-12 bg-red-600/50 active:bg-red-500 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm transition-colors">
                 <svg className="w-5 h-5 md:w-6 md:h-6 text-white/80 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /></svg>
               </button>
-              {/* Tombol Bawah (Simpan) */}
+              {/*(Simpan) */}
               <button onClick={() => handleTouchAction('SAVE')} className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 md:w-12 md:h-12 bg-red-600/50 active:bg-red-500 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm transition-colors">
                 <svg className="w-5 h-5 md:w-6 md:h-6 text-white/80 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
               </button>
-              {/* Tombol Kiri (Play Rev) */}
+              {/*(Play Rev) */}
               <button onClick={() => handleTouchAction('PLAY_REV')} className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-red-600/50 active:bg-red-500 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm transition-colors">
                 <svg className="w-5 h-5 md:w-6 md:h-6 text-white/80 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
               </button>
-              {/* Tombol Kanan (Play Fwd) */}
+              {/*(Play Fwd) */}
               <button onClick={() => handleTouchAction('PLAY_FWD')} className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-red-600/50 active:bg-red-500 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm transition-colors">
                  <svg className="w-5 h-5 md:w-6 md:h-6 text-white/80 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z" /></svg>
               </button>
             </div>
 
-            {/* KANAN: Tombol Atas & Bawah (Throttle) */}
+            {/* KANAN: Tombol Atas & Bawah */}
             <div className="flex flex-col gap-1 md:gap-2 pointer-events-auto shadow-2xl rounded-2xl">
               <button 
                 onPointerDown={() => { touchStateRef.current.throttle = -1; }}
