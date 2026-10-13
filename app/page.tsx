@@ -474,7 +474,7 @@ export default function RobotDashboard() {
                   <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest pointer-events-none">Steering</div>
                   <div className="flex gap-2 sm:gap-3 bg-slate-950/50 p-2 sm:p-2.5 rounded-[2rem] border border-slate-800/50 shadow-inner">
                     <button
-                      onPointerDown={() => { touchStateRef.current.turn = -0.6; }}
+                      onPointerDown={() => { touchStateRef.current.turn = -1; }}
                       onPointerUp={() => { touchStateRef.current.turn = 0; }}
                       onPointerLeave={() => { touchStateRef.current.turn = 0; }}
                       className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-b from-emerald-500 to-emerald-700 active:from-emerald-400 active:to-emerald-600 rounded-2xl shadow-[0_4px_15px_rgba(16,185,129,0.2)] flex items-center justify-center transition-transform active:scale-90 touch-none border border-emerald-400/20"
@@ -484,7 +484,7 @@ export default function RobotDashboard() {
                       </svg>
                     </button>
                     <button
-                      onPointerDown={() => { touchStateRef.current.turn = 0.6; }}
+                      onPointerDown={() => { touchStateRef.current.turn = 1; }}
                       onPointerUp={() => { touchStateRef.current.turn = 0; }}
                       onPointerLeave={() => { touchStateRef.current.turn = 0; }}
                       className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-b from-emerald-500 to-emerald-700 active:from-emerald-400 active:to-emerald-600 rounded-2xl shadow-[0_4px_15px_rgba(16,185,129,0.2)] flex items-center justify-center transition-transform active:scale-90 touch-none border border-emerald-400/20"
@@ -501,7 +501,7 @@ export default function RobotDashboard() {
                   <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest pointer-events-none">Throttle</div>
                   <div className="flex flex-col gap-2 sm:gap-3 bg-slate-950/50 p-2 sm:p-2.5 rounded-[2rem] border border-slate-800/50 shadow-inner">
                     <button
-                      onPointerDown={() => { touchStateRef.current.throttle = -0.6; }}
+                      onPointerDown={() => { touchStateRef.current.throttle = -1; }}
                       onPointerUp={() => { touchStateRef.current.throttle = 0; }}
                       onPointerLeave={() => { touchStateRef.current.throttle = 0; }}
                       className="w-20 h-12 sm:w-28 sm:h-14 bg-gradient-to-b from-emerald-500 to-emerald-700 active:from-emerald-400 active:to-emerald-600 rounded-2xl shadow-[0_4px_15px_rgba(16,185,129,0.2)] flex items-center justify-center transition-transform active:scale-90 touch-none border border-emerald-400/20"
@@ -511,7 +511,7 @@ export default function RobotDashboard() {
                       </svg>
                     </button>
                     <button
-                      onPointerDown={() => { touchStateRef.current.throttle = 0.6; }}
+                      onPointerDown={() => { touchStateRef.current.throttle = 1; }}
                       onPointerUp={() => { touchStateRef.current.throttle = 0; }}
                       onPointerLeave={() => { touchStateRef.current.throttle = 0; }}
                       className="w-20 h-12 sm:w-28 sm:h-14 bg-gradient-to-b from-amber-500 to-amber-700 active:from-amber-400 active:to-amber-600 rounded-2xl shadow-[0_4px_15px_rgba(245,158,11,0.2)] flex items-center justify-center transition-transform active:scale-90 touch-none border border-amber-400/20"
