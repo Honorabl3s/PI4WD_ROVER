@@ -56,19 +56,19 @@ export default function RobotDashboard() {
   const trajectoryRef = useRef<TrajectoryStep[]>([]);
   const prevBtnsRef = useRef({ A: false, B: false, Y: false, X: false });
   const wsRef = useRef<WebSocket | null>(null);
-  const keysRef = useRef({ up: false, down: false, left: false, right: false });
+  
+  const keysRef = useRef({ up: false, down: false, left: false, right: false, q: false, e: false });
+  const touchStateRef = useRef({ turn: 0, throttle: 0, pan: 0 });
 
-  const touchStateRef = useRef({ turn: 0, throttle: 0 });
-
-  const sendCommand = (x: number, y: number) => {
+  const sendCommand = (x: number, y: number, pan: number = 0) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ x, y }));
+      wsRef.current.send(JSON.stringify({ x, y, pan }));
     }
   };
 
   const stopRobot = () => {
     setSteering({ x: 0, y: 0 });
-    sendCommand(0, 0);
+    sendCommand(0, 0, touchStateRef.current.pan); 
   };
 
   const getMotionType = (x: number, y: number): MotionType => {
@@ -126,7 +126,7 @@ export default function RobotDashboard() {
         if (currentMotion !== 'STOP') lastActiveMotion = currentMotion;
 
         setSteering({ x: targetX, y: targetY });
-        sendCommand(targetX, targetY);
+        sendCommand(targetX, targetY, touchStateRef.current.pan);
 
         const startL = currentTicksRef.current.l;
         const startR = currentTicksRef.current.r;
@@ -246,7 +246,6 @@ export default function RobotDashboard() {
     }
   };
 
-  // Full-Screen
   const enterFullscreen = () => {
     const elem = document.documentElement;
     if (elem.requestFullscreen) {
@@ -279,23 +278,39 @@ export default function RobotDashboard() {
     };
     wsRef.current = ws;
 
+    // PERBAIKAN LOGIKA KEYBOARD (Q dan E ditambahkan & CapsLock kebal)
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['ArrowUp', 'w', 'W'].includes(e.key)) keysRef.current.up = true;
-      if (['ArrowDown', 's', 'S'].includes(e.key)) keysRef.current.down = true;
-      if (['ArrowLeft', 'a', 'A'].includes(e.key)) keysRef.current.left = true;
-      if (['ArrowRight', 'd', 'D'].includes(e.key)) keysRef.current.right = true;
+      const key = e.key.toLowerCase();
+      if (key === 'arrowup' || key === 'w') keysRef.current.up = true;
+      if (key === 'arrowdown' || key === 's') keysRef.current.down = true;
+      if (key === 'arrowleft' || key === 'a') keysRef.current.left = true;
+      if (key === 'arrowright' || key === 'd') keysRef.current.right = true;
+      if (key === 'q') keysRef.current.q = true; 
+      if (key === 'e') keysRef.current.e = true; 
     };
+
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (['ArrowUp', 'w', 'W'].includes(e.key)) keysRef.current.up = false;
-      if (['ArrowDown', 's', 'S'].includes(e.key)) keysRef.current.down = false;
-      if (['ArrowLeft', 'a', 'A'].includes(e.key)) keysRef.current.left = false;
-      if (['ArrowRight', 'd', 'D'].includes(e.key)) keysRef.current.right = false;
+      const key = e.key.toLowerCase();
+      if (key === 'arrowup' || key === 'w') keysRef.current.up = false;
+      if (key === 'arrowdown' || key === 's') keysRef.current.down = false;
+      if (key === 'arrowleft' || key === 'a') keysRef.current.left = false;
+      if (key === 'arrowright' || key === 'd') keysRef.current.right = false;
+      
+      // Saat tombol dilepas, kembalikan posisi pan (menoleh) ke 0 secara paksa
+      if (key === 'q') {
+          keysRef.current.q = false;
+          touchStateRef.current.pan = 0; 
+      }
+      if (key === 'e') {
+          keysRef.current.e = false;
+          touchStateRef.current.pan = 0; 
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
     const interval = setInterval(() => {
-      let currentX = 0; let currentY = 0;
+      let currentX = 0; let currentY = 0; let currentPan = 0;
       let btnA = false; let btnB = false; let btnY = false; let btnX = false;
 
       if (controlMode === 'gamepad') {
@@ -306,11 +321,15 @@ export default function RobotDashboard() {
             if (gamepads[i]) { activeGp = gamepads[i]; break; }
           }
           if (activeGp) {
-            const rawX = activeGp.axes[0] || 0;
+            const rawX = activeGp.axes[0] || 0; 
+            const rawPan = activeGp.axes[2] || 0; 
             const maju = activeGp.buttons[7]?.value || 0;
             const mundur = activeGp.buttons[6]?.value || 0;
+            
             currentX = Math.abs(rawX) > 0.15 ? Number(rawX.toFixed(2)) : 0;
             currentY = Number((mundur - maju).toFixed(2));
+            currentPan = Math.abs(rawPan) > 0.15 ? Number(rawPan.toFixed(2)) : 0;
+
             btnA = activeGp.buttons[0]?.pressed || false;
             btnB = activeGp.buttons[1]?.pressed || false;
             btnY = activeGp.buttons[3]?.pressed || false;
@@ -320,9 +339,21 @@ export default function RobotDashboard() {
       } else if (controlMode === 'keyboard') {
         currentY = (keysRef.current.down ? 1 : 0) - (keysRef.current.up ? 1 : 0);
         currentX = (keysRef.current.right ? 1 : 0) - (keysRef.current.left ? 1 : 0);
+        currentPan = (keysRef.current.e ? 1 : 0) - (keysRef.current.q ? 1 : 0);
       } else if (controlMode === 'touch' || isFullscreen) {
         currentX = touchStateRef.current.turn;
         currentY = touchStateRef.current.throttle;
+        currentPan = touchStateRef.current.pan;
+      }
+
+      // GLOBAL KEYBOARD OVERRIDE: Berlaku dimanapun asalkan tombol keyboard ditekan
+      if (keysRef.current.up || keysRef.current.down || keysRef.current.left || keysRef.current.right) {
+        currentY = (keysRef.current.down ? 1 : 0) - (keysRef.current.up ? 1 : 0);
+        currentX = (keysRef.current.right ? 1 : 0) - (keysRef.current.left ? 1 : 0);
+      }
+      if (keysRef.current.q || keysRef.current.e) {
+        currentPan = (keysRef.current.e ? 1 : 0) - (keysRef.current.q ? 1 : 0);
+        touchStateRef.current.pan = currentPan; // Sinkronkan ke UI Sentuh
       }
 
       const currentMotion = getMotionType(currentX, currentY);
@@ -382,7 +413,7 @@ export default function RobotDashboard() {
       }
 
       setSteering({ x: currentX, y: currentY });
-      sendCommand(currentX, currentY);
+      sendCommand(currentX, currentY, currentPan);
     }, RECORD_INTERVAL_MS);
 
     return () => {
@@ -433,7 +464,7 @@ export default function RobotDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           
-          {/* (KAMERA & TOUCH CONTROLLER) */}
+          {/* (KAMERA & TOUCH CONTROLLER INLINE) */}
           <div className="lg:col-span-2 flex flex-col gap-4 md:gap-6">
             
             <div className="bg-slate-900/60 rounded-3xl p-3 md:p-4 border border-slate-800 shadow-xl backdrop-blur-sm">
@@ -450,75 +481,101 @@ export default function RobotDashboard() {
                   Full Screen
                 </button>
               </div>
+              
               <div className="aspect-video bg-black rounded-2xl overflow-hidden flex items-center justify-center border border-slate-950 shadow-inner relative">
-                
                 <img src={streamUrl} alt="Robot view" className="w-full h-full object-contain pointer-events-auto" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               </div>
             </div>
 
-            {/* DUAL-PAD */}
+            {/* TOUCH UI BARU SESUAI DESAIN */}
             {controlMode === 'touch' && (
-              <div className="bg-slate-900/80 p-4 md:p-6 rounded-3xl border border-slate-800 shadow-2xl flex flex-row justify-around items-center backdrop-blur-md select-none">
+              <div className="bg-slate-900/80 p-6 md:p-8 rounded-3xl border border-slate-800 shadow-2xl flex flex-row justify-between items-center backdrop-blur-md select-none touch-none">
                 
-                {/* SISI KIRI: BELOK */}
-                <div className="flex flex-col items-center gap-3">
-                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest pointer-events-none">Steering</div>
-                  <div className="flex gap-2 sm:gap-3 bg-slate-950/50 p-2 sm:p-2.5 rounded-[2rem] border border-slate-800/50 shadow-inner">
-                    <button
-                      onPointerDown={() => { touchStateRef.current.turn = -1; }}
-                      onPointerUp={() => { touchStateRef.current.turn = 0; }}
-                      onPointerLeave={() => { touchStateRef.current.turn = 0; }}
-                      className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-b from-emerald-500 to-emerald-700 active:from-emerald-400 active:to-emerald-600 rounded-2xl shadow-[0_4px_15px_rgba(16,185,129,0.2)] flex items-center justify-center transition-transform active:scale-90 touch-none border border-emerald-400/20"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 sm:h-10 sm:w-10 text-white drop-shadow-md pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                      </svg>
+                {/* SISI KIRI: Aksi dan Slider Kamera */}
+                <div className="flex flex-col gap-5 w-1/2 max-w-[260px]">
+                  {/* 4 Tombol Aksi Berjejer */}
+                  <div className="flex justify-between gap-2">
+                    <button onClick={() => handleTouchAction('RECORD')} className="w-12 h-12 bg-red-600/70 active:bg-red-500 rounded-xl flex items-center justify-center shadow-lg border border-red-500/30 transition-all">
+                       <svg className="w-5 h-5 text-white pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /></svg>
                     </button>
-                    <button
-                      onPointerDown={() => { touchStateRef.current.turn = 1; }}
-                      onPointerUp={() => { touchStateRef.current.turn = 0; }}
-                      onPointerLeave={() => { touchStateRef.current.turn = 0; }}
-                      className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-b from-emerald-500 to-emerald-700 active:from-emerald-400 active:to-emerald-600 rounded-2xl shadow-[0_4px_15px_rgba(16,185,129,0.2)] flex items-center justify-center transition-transform active:scale-90 touch-none border border-emerald-400/20"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 sm:h-10 sm:w-10 text-white drop-shadow-md pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
+                    <button onClick={() => handleTouchAction('SAVE')} className="w-12 h-12 bg-amber-600/70 active:bg-amber-500 rounded-xl flex items-center justify-center shadow-lg border border-amber-500/30 transition-all">
+                       <svg className="w-5 h-5 text-white pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
                     </button>
+                    <button onClick={() => handleTouchAction('PLAY_REV')} className="w-12 h-12 bg-blue-600/70 active:bg-blue-500 rounded-xl flex items-center justify-center shadow-lg border border-blue-500/30 transition-all">
+                       <svg className="w-5 h-5 text-white pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
+                    <button onClick={() => handleTouchAction('PLAY_FWD')} className="w-12 h-12 bg-emerald-600/70 active:bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg border border-emerald-500/30 transition-all">
+                       <svg className="w-5 h-5 text-white pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z" /></svg>
+                    </button>
+                  </div>
+
+                  {/* Slider Kamera di Bawah Tombol Aksi */}
+                  <div className="w-full bg-slate-950/50 p-3 rounded-2xl border border-slate-800 shadow-inner flex items-center gap-3">
+                     <span className="text-xs font-bold text-slate-500">Q</span>
+                     <input 
+                        type="range" min="-1" max="1" step="0.05" defaultValue="0"
+                        onInput={(e) => { touchStateRef.current.pan = Number(e.currentTarget.value); }}
+                        onPointerUp={(e) => { 
+                          e.currentTarget.value = "0"; 
+                          touchStateRef.current.pan = 0; 
+                        }}
+                        onPointerLeave={(e) => {
+                          e.currentTarget.value = "0"; 
+                          touchStateRef.current.pan = 0; 
+                        }}
+                        className="w-full accent-red-500"
+                     />
+                     <span className="text-xs font-bold text-slate-500">E</span>
                   </div>
                 </div>
 
-                {/* SISI KANAN: THROTTLE */}
-                <div className="flex flex-col items-center gap-3">
-                  <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest pointer-events-none">Throttle</div>
-                  <div className="flex flex-col gap-2 sm:gap-3 bg-slate-950/50 p-2 sm:p-2.5 rounded-[2rem] border border-slate-800/50 shadow-inner">
-                    <button
-                      onPointerDown={() => { touchStateRef.current.throttle = -1; }}
-                      onPointerUp={() => { touchStateRef.current.throttle = 0; }}
-                      onPointerLeave={() => { touchStateRef.current.throttle = 0; }}
-                      className="w-20 h-12 sm:w-28 sm:h-14 bg-gradient-to-b from-emerald-500 to-emerald-700 active:from-emerald-400 active:to-emerald-600 rounded-2xl shadow-[0_4px_15px_rgba(16,185,129,0.2)] flex items-center justify-center transition-transform active:scale-90 touch-none border border-emerald-400/20"
+                {/* SISI KANAN: D-Pad Pergerakan Salib */}
+                <div className="flex flex-col items-center gap-1 pointer-events-auto">
+                  {/* MAJU */}
+                  <button 
+                    onPointerDown={() => touchStateRef.current.throttle = -1} 
+                    onPointerUp={() => touchStateRef.current.throttle = 0} 
+                    onPointerLeave={() => touchStateRef.current.throttle = 0} 
+                    className="w-14 h-14 bg-red-600/70 active:bg-red-500 rounded-2xl flex items-center justify-center shadow-lg border border-red-500/30 text-white transition-colors"
+                  >
+                    <svg className="w-7 h-7 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4l-8 8h6v8h4v-8h6z"/></svg>
+                  </button>
+                  
+                  {/* KIRI DAN KANAN */}
+                  <div className="flex gap-14">
+                    <button 
+                      onPointerDown={() => touchStateRef.current.turn = -1} 
+                      onPointerUp={() => touchStateRef.current.turn = 0} 
+                      onPointerLeave={() => touchStateRef.current.turn = 0} 
+                      className="w-14 h-14 bg-red-600/70 active:bg-red-500 rounded-2xl flex items-center justify-center shadow-lg border border-red-500/30 text-white transition-colors"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-8 sm:w-8 text-white drop-shadow-md pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                      </svg>
+                      <svg className="w-7 h-7 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M4 12l8 8v-6h8v-4h-8V4z"/></svg>
                     </button>
-                    <button
-                      onPointerDown={() => { touchStateRef.current.throttle = 1; }}
-                      onPointerUp={() => { touchStateRef.current.throttle = 0; }}
-                      onPointerLeave={() => { touchStateRef.current.throttle = 0; }}
-                      className="w-20 h-12 sm:w-28 sm:h-14 bg-gradient-to-b from-amber-500 to-amber-700 active:from-amber-400 active:to-amber-600 rounded-2xl shadow-[0_4px_15px_rgba(245,158,11,0.2)] flex items-center justify-center transition-transform active:scale-90 touch-none border border-amber-400/20"
+                    <button 
+                      onPointerDown={() => touchStateRef.current.turn = 1} 
+                      onPointerUp={() => touchStateRef.current.turn = 0} 
+                      onPointerLeave={() => touchStateRef.current.turn = 0} 
+                      className="w-14 h-14 bg-red-600/70 active:bg-red-500 rounded-2xl flex items-center justify-center shadow-lg border border-red-500/30 text-white transition-colors"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-8 sm:w-8 text-white drop-shadow-md pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                      </svg>
+                      <svg className="w-7 h-7 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M20 12l-8-8v6H4v4h8v6z"/></svg>
                     </button>
                   </div>
+                  
+                  {/* MUNDUR */}
+                  <button 
+                    onPointerDown={() => touchStateRef.current.throttle = 1} 
+                    onPointerUp={() => touchStateRef.current.throttle = 0} 
+                    onPointerLeave={() => touchStateRef.current.throttle = 0} 
+                    className="w-14 h-14 bg-red-600/70 active:bg-red-500 rounded-2xl flex items-center justify-center shadow-lg border border-red-500/30 text-white transition-colors"
+                  >
+                     <svg className="w-7 h-7 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20l8-8h-6V4h-4v8H4z"/></svg>
+                  </button>
                 </div>
-
               </div>
             )}
           </div>
 
-          {/* KOLOM KANAN (STATUS & AKSI RUTE) */}
+          {/* KOLOM KANAN (STATUS) */}
           <div className="bg-slate-900/60 rounded-3xl p-5 md:p-6 border border-slate-800 shadow-xl flex flex-col justify-between backdrop-blur-sm">
             <div>
               <h2 className="text-sm font-bold mb-4 md:mb-5 border-b border-slate-800 pb-3 flex justify-between items-center text-slate-300 uppercase tracking-widest">
@@ -528,7 +585,7 @@ export default function RobotDashboard() {
               
               <div className="flex flex-col gap-4 md:gap-5">
                 <div className="bg-slate-950/50 p-3 rounded-xl border border-slate-800/50 text-xs font-mono text-center text-emerald-400 pointer-events-none">
-                  {controlMode === 'touch' ? '📱 AKTIF: DUAL-PAD SENTUH' : controlMode === 'keyboard' ? '⌨️ AKTIF: W-A-S-D' : gamepadStatus}
+                  {controlMode === 'touch' ? '📱 AKTIF: DUAL-PAD SENTUH' : controlMode === 'keyboard' ? '⌨️ AKTIF: W-A-S-D & Q-E' : gamepadStatus}
                 </div>
 
                 <div className="bg-slate-950/50 p-4 md:p-5 rounded-2xl flex flex-col items-center gap-4 border border-slate-800/50 shadow-inner pointer-events-none">
@@ -550,47 +607,22 @@ export default function RobotDashboard() {
                 </div>
               </div>
             </div>
-
-            {/* TOMBOL AKSI RUTE */}
+            
+            {/* Tombol aksi cadangan untuk UI Desktop */}
             <div className="mt-6 md:mt-8 pt-5 border-t border-slate-800 flex flex-col gap-3">
-              <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1 pointer-events-none">Memori Rute</div>
-              <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={() => handleTouchAction('RECORD')}
-                  className="bg-gradient-to-b from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 active:scale-95 text-white font-bold py-3 px-2 rounded-xl text-xs shadow-[0_4px_10px_rgba(239,68,68,0.2)] transition-all flex items-center justify-center gap-1 touch-none"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /></svg>
-                  <span className="pointer-events-none drop-shadow-sm">Rekam</span>
-                </button>
-                <button 
-                  onClick={() => handleTouchAction('SAVE')}
-                  className="bg-gradient-to-b from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-white font-bold py-3 px-2 rounded-xl text-xs shadow-[0_4px_10px_rgba(245,158,11,0.2)] transition-all flex items-center justify-center gap-1 touch-none"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                  <span className="pointer-events-none drop-shadow-sm">Simpan</span>
-                </button>
-                <button 
-                  onClick={() => handleTouchAction('PLAY_FWD')}
-                  className="bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 active:scale-95 text-white font-bold py-3 px-2 rounded-xl text-[11px] shadow-[0_4px_10px_rgba(16,185,129,0.2)] transition-all flex items-center justify-center gap-1 touch-none"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z" /></svg>
-                  <span className="pointer-events-none drop-shadow-sm">Play Fwd</span>
-                </button>
-                <button 
-                  onClick={() => handleTouchAction('PLAY_REV')}
-                  className="bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 active:scale-95 text-white font-bold py-3 px-2 rounded-xl text-[11px] shadow-[0_4px_10px_rgba(59,130,246,0.2)] transition-all flex items-center justify-center gap-1 touch-none"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                  <span className="pointer-events-none drop-shadow-sm">Play Rev</span>
-                </button>
+              <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1 pointer-events-none">Panel Cadangan Aksi</div>
+              <div className="grid grid-cols-2 gap-3 opacity-50 hover:opacity-100 transition-opacity">
+                <button onClick={() => handleTouchAction('RECORD')} className="bg-slate-800 hover:bg-red-600 text-white py-2 rounded-lg text-xs font-bold transition-colors">Rekam</button>
+                <button onClick={() => handleTouchAction('SAVE')} className="bg-slate-800 hover:bg-amber-500 text-white py-2 rounded-lg text-xs font-bold transition-colors">Simpan</button>
+                <button onClick={() => handleTouchAction('PLAY_FWD')} className="bg-slate-800 hover:bg-emerald-500 text-white py-2 rounded-lg text-xs font-bold transition-colors">P. Maju</button>
+                <button onClick={() => handleTouchAction('PLAY_REV')} className="bg-slate-800 hover:bg-blue-500 text-white py-2 rounded-lg text-xs font-bold transition-colors">P. Mundur</button>
               </div>
             </div>
-
           </div>
         </div>
       </div>
 
-      {/* OVERLAY LAYAR PENUH (FULL SCREEN) */}
+      {/* OVERLAY LAYAR PENUH (FULL SCREEN) LAYOUT BARU */}
       {isFullscreen && (
         <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center overflow-hidden touch-none select-none">
           
@@ -609,65 +641,86 @@ export default function RobotDashboard() {
           </button>
 
           {/* AREA KONTROL OVERLAY */}
-          <div className="absolute inset-0 z-[101] flex flex-row items-end justify-between px-6 md:px-12 pb-6 md:pb-8 pointer-events-none">
+          <div className="absolute inset-0 z-[101] flex flex-row items-end justify-between px-8 md:px-16 pb-8 md:pb-12 pointer-events-none">
             
-            {/* KIRI: Tombol Kiri & Kanan*/}
-            <div className="flex gap-1 md:gap-2 pointer-events-auto shadow-2xl rounded-2xl">
-              <button 
-                onPointerDown={() => { touchStateRef.current.turn = -1; }}
-                onPointerUp={() => { touchStateRef.current.turn = 0; }}
-                onPointerLeave={() => { touchStateRef.current.turn = 0; }}
-                className="w-16 h-20 md:w-20 md:h-24 bg-red-600/50 active:bg-red-500 flex items-center justify-center rounded-l-xl border-r border-red-800/30 backdrop-blur-sm transition-colors"
-              >
-                <svg className="w-8 h-8 md:w-10 md:h-10 text-white/80 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7v14z"/></svg>
-              </button>
-              <button 
-                onPointerDown={() => { touchStateRef.current.turn = 1; }}
-                onPointerUp={() => { touchStateRef.current.turn = 0; }}
-                onPointerLeave={() => { touchStateRef.current.turn = 0; }}
-                className="w-16 h-20 md:w-20 md:h-24 bg-red-600/50 active:bg-red-500 flex items-center justify-center rounded-r-xl backdrop-blur-sm transition-colors"
-              >
-                <svg className="w-8 h-8 md:w-10 md:h-10 text-white/80 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7V5z"/></svg>
-              </button>
+            {/* SISI KIRI: Aksi dan Slider Kamera */}
+            <div className="flex flex-col gap-6 pointer-events-auto w-[240px] md:w-[280px]">
+              {/* 4 Tombol Aksi Berjejer */}
+              <div className="flex justify-between gap-3">
+                <button onClick={() => handleTouchAction('RECORD')} className="w-12 h-12 md:w-14 md:h-14 bg-red-600/70 active:bg-red-500 rounded-xl flex items-center justify-center backdrop-blur-md shadow-lg border border-red-500/30 transition-all">
+                   <svg className="w-5 h-5 text-white pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /></svg>
+                </button>
+                <button onClick={() => handleTouchAction('SAVE')} className="w-12 h-12 md:w-14 md:h-14 bg-amber-600/70 active:bg-amber-500 rounded-xl flex items-center justify-center backdrop-blur-md shadow-lg border border-amber-500/30 transition-all">
+                   <svg className="w-5 h-5 text-white pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                </button>
+                <button onClick={() => handleTouchAction('PLAY_REV')} className="w-12 h-12 md:w-14 md:h-14 bg-blue-600/70 active:bg-blue-500 rounded-xl flex items-center justify-center backdrop-blur-md shadow-lg border border-blue-500/30 transition-all">
+                   <svg className="w-5 h-5 text-white pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                </button>
+                <button onClick={() => handleTouchAction('PLAY_FWD')} className="w-12 h-12 md:w-14 md:h-14 bg-emerald-600/70 active:bg-emerald-500 rounded-xl flex items-center justify-center backdrop-blur-md shadow-lg border border-emerald-500/30 transition-all">
+                   <svg className="w-5 h-5 text-white pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z" /></svg>
+                </button>
+              </div>
+
+              {/* Slider Kamera di Bawah Tombol Aksi */}
+              <div className="w-full bg-black/40 p-4 rounded-2xl backdrop-blur-md border border-white/10 shadow-lg flex items-center gap-3">
+                 <span className="text-sm font-bold text-white/70">Q</span>
+                 <input 
+                    type="range" min="-1" max="1" step="0.05" defaultValue="0"
+                    onInput={(e) => { touchStateRef.current.pan = Number(e.currentTarget.value); }}
+                    onPointerUp={(e) => { 
+                      e.currentTarget.value = "0"; 
+                      touchStateRef.current.pan = 0; 
+                    }}
+                    onPointerLeave={(e) => {
+                      e.currentTarget.value = "0"; 
+                      touchStateRef.current.pan = 0; 
+                    }}
+                    className="w-full accent-red-500"
+                 />
+                 <span className="text-sm font-bold text-white/70">E</span>
+              </div>
             </div>
 
-            {/* TENGAH: 4 Tombol Aksi (D-Pad Style) */}
-            <div className="relative w-28 h-28 md:w-36 md:h-36 pointer-events-auto mb-2">
-              {/*(Rekam) */}
-              <button onClick={() => handleTouchAction('RECORD')} className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-10 md:w-12 md:h-12 bg-red-600/50 active:bg-red-500 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm transition-colors">
-                <svg className="w-5 h-5 md:w-6 md:h-6 text-white/80 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /></svg>
-              </button>
-              {/*(Simpan) */}
-              <button onClick={() => handleTouchAction('SAVE')} className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-10 md:w-12 md:h-12 bg-red-600/50 active:bg-red-500 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm transition-colors">
-                <svg className="w-5 h-5 md:w-6 md:h-6 text-white/80 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-              </button>
-              {/*(Play Rev) */}
-              <button onClick={() => handleTouchAction('PLAY_REV')} className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-red-600/50 active:bg-red-500 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm transition-colors">
-                <svg className="w-5 h-5 md:w-6 md:h-6 text-white/80 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-              </button>
-              {/*(Play Fwd) */}
-              <button onClick={() => handleTouchAction('PLAY_FWD')} className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-red-600/50 active:bg-red-500 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm transition-colors">
-                 <svg className="w-5 h-5 md:w-6 md:h-6 text-white/80 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z" /></svg>
-              </button>
-            </div>
-
-            {/* KANAN: Tombol Atas & Bawah */}
-            <div className="flex flex-col gap-1 md:gap-2 pointer-events-auto shadow-2xl rounded-2xl">
+            {/* SISI KANAN: D-Pad Pergerakan Salib */}
+            <div className="flex flex-col items-center gap-2 pointer-events-auto">
+              {/* MAJU */}
               <button 
-                onPointerDown={() => { touchStateRef.current.throttle = -1; }}
-                onPointerUp={() => { touchStateRef.current.throttle = 0; }}
-                onPointerLeave={() => { touchStateRef.current.throttle = 0; }}
-                className="w-20 h-16 md:w-24 md:h-20 bg-red-600/50 active:bg-red-500 flex items-center justify-center rounded-t-xl border-b border-red-800/30 backdrop-blur-sm transition-colors"
+                onPointerDown={() => touchStateRef.current.throttle = -1} 
+                onPointerUp={() => touchStateRef.current.throttle = 0} 
+                onPointerLeave={() => touchStateRef.current.throttle = 0} 
+                className="w-16 h-16 md:w-20 md:h-20 bg-red-600/60 active:bg-red-500 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-xl border border-red-500/40 text-white transition-colors"
               >
-                <svg className="w-8 h-8 md:w-10 md:h-10 text-white/80 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7H5z"/></svg>
+                <svg className="w-8 h-8 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4l-8 8h6v8h4v-8h6z"/></svg>
               </button>
+              
+              {/* KIRI DAN KANAN */}
+              <div className="flex gap-16 md:gap-20">
+                <button 
+                  onPointerDown={() => touchStateRef.current.turn = -1} 
+                  onPointerUp={() => touchStateRef.current.turn = 0} 
+                  onPointerLeave={() => touchStateRef.current.turn = 0} 
+                  className="w-16 h-16 md:w-20 md:h-20 bg-red-600/60 active:bg-red-500 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-xl border border-red-500/40 text-white transition-colors"
+                >
+                  <svg className="w-8 h-8 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M4 12l8 8v-6h8v-4h-8V4z"/></svg>
+                </button>
+                <button 
+                  onPointerDown={() => touchStateRef.current.turn = 1} 
+                  onPointerUp={() => touchStateRef.current.turn = 0} 
+                  onPointerLeave={() => touchStateRef.current.turn = 0} 
+                  className="w-16 h-16 md:w-20 md:h-20 bg-red-600/60 active:bg-red-500 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-xl border border-red-500/40 text-white transition-colors"
+                >
+                  <svg className="w-8 h-8 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M20 12l-8-8v6H4v4h8v6z"/></svg>
+                </button>
+              </div>
+              
+              {/* MUNDUR */}
               <button 
-                onPointerDown={() => { touchStateRef.current.throttle = 1; }}
-                onPointerUp={() => { touchStateRef.current.throttle = 0; }}
-                onPointerLeave={() => { touchStateRef.current.throttle = 0; }}
-                className="w-20 h-16 md:w-24 md:h-20 bg-red-600/50 active:bg-red-500 flex items-center justify-center rounded-b-xl backdrop-blur-sm transition-colors"
+                onPointerDown={() => touchStateRef.current.throttle = 1} 
+                onPointerUp={() => touchStateRef.current.throttle = 0} 
+                onPointerLeave={() => touchStateRef.current.throttle = 0} 
+                className="w-16 h-16 md:w-20 md:h-20 bg-red-600/60 active:bg-red-500 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-xl border border-red-500/40 text-white transition-colors"
               >
-                <svg className="w-8 h-8 md:w-10 md:h-10 text-white/80 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7h14z"/></svg>
+                 <svg className="w-8 h-8 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20l8-8h-6V4h-4v8H4z"/></svg>
               </button>
             </div>
 
