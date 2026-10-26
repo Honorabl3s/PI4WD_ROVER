@@ -1,6 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { Pixelify_Sans } from 'next/font/google';
+
+const pixelify = Pixelify_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+});
 
 // ==========================================
 // A. KOMPONEN LOGO PI4WD ROVER
@@ -8,19 +14,11 @@ import { useState, useEffect, useRef } from 'react';
 const PiRoverLogo = ({ scale = 1 }: { scale?: number }) => {
   return (
     <div className="flex flex-col items-center select-none" style={{ transform: `scale(${scale})` }}>
-      <div className="flex items-center gap-1.5 font-extrabold text-3xl md:text-4xl tracking-tighter">
-        <div className="w-6 h-6 md:w-7 md:h-7 border border-emerald-500/50 bg-emerald-500/10 rounded flex items-center justify-center -rotate-45">
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-emerald-500" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
-          </svg>
-        </div>
+      <div className="flex items-center gap-2 font-extrabold text-3xl md:text-4xl tracking-widest">
+        <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-emerald-500 bg-emerald-100 rounded-sm -rotate-45 shadow-sm"></div>
         <span className="text-red-600 relative -top-0.5">PI4</span>
         <span className="text-slate-900">WD ROVER</span>
-        <div className="w-6 h-6 md:w-7 md:h-7 border border-emerald-500/50 bg-emerald-500/10 rounded flex items-center justify-center rotate-45">
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-emerald-500" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
-          </svg>
-        </div>
+        <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-emerald-500 bg-emerald-100 rounded-sm rotate-45 shadow-sm"></div>
       </div>
     </div>
   );
@@ -46,6 +44,8 @@ export default function RobotDashboard() {
   
   const [gpVisuals, setGpVisuals] = useState({ lt: 0, rt: 0, steer: 0, btnA: false, btnB: false, btnX: false, btnY: false });
   
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const currentTicksRef = useRef({ l: 0, r: 0 });
   const lastRecordedTicksRef = useRef({ l: 0, r: 0 });
   const activeMotionRef = useRef<MotionType>('STOP');
@@ -128,7 +128,7 @@ export default function RobotDashboard() {
             activeMotionRef.current = 'STOP'; lastCommandRef.current = { x: 0, y: 0 }; stopRobot();
         }
     } else if (action === 'SAVE') {
-        if (isRecordingRef.current) { isRecordingRef.current = false; /* Implementasi simpan API di sini */ }
+        if (isRecordingRef.current) { isRecordingRef.current = false; }
     }
   };
 
@@ -169,6 +169,11 @@ export default function RobotDashboard() {
     
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
 
     const interval = setInterval(() => {
       let currentX = 0; let currentY = 0;
@@ -228,153 +233,170 @@ export default function RobotDashboard() {
     return () => {
       clearTimeout(loadingTimer); 
       clearInterval(interval);
-      window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('keydown', handleKeyDown); 
+      window.removeEventListener('keyup', handleKeyUp);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
       if (wsRef.current) wsRef.current.close();
     };
   }, [controlMode, PI_IP]);
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); setIsFullscreen(true); } 
-    else if (document.exitFullscreen) { document.exitFullscreen(); setIsFullscreen(false); }
+    if (!document.fullscreenElement) { 
+      if (containerRef.current) {
+        containerRef.current.requestFullscreen().catch((err) => console.log(err)); 
+      }
+    } else { 
+      if (document.exitFullscreen) {
+        document.exitFullscreen(); 
+      }
+    }
   };
 
   return (
     <main 
       onContextMenu={(e) => e.preventDefault()}
-      className="min-h-screen bg-emerald-50 flex flex-col select-none touch-none overflow-hidden" 
-      style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', fontFamily: '"HK Modular", sans-serif' }}
+      className={`min-h-screen bg-emerald-50 flex flex-col select-none touch-none overflow-x-hidden ${pixelify.className}`} 
+      style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
     >
       {/* LOADING SCREEN */}
       <div className={`fixed inset-0 z-[200] bg-emerald-50 flex flex-col items-center justify-center transition-opacity duration-1000 ease-in-out ${isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <div className="scale-125 md:scale-150"><PiRoverLogo /></div>
-        <div className="mt-16 flex items-center gap-2 text-slate-500 text-xs tracking-widest uppercase">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+        <div className="mt-16 flex items-center gap-3 text-slate-500 text-sm tracking-widest uppercase">
+          <div className="w-3 h-3 rounded-sm bg-emerald-500 animate-pulse"></div>
           Menghubungkan ke Robot...
         </div>
       </div>
 
       {/* HEADER LOGO */}
-      <header className="w-full flex justify-center py-2 md:py-4 bg-emerald-50 relative z-0">
+      <header className="w-full flex justify-center pt-6 pb-2 md:pt-8 md:pb-4 bg-emerald-50 relative z-0">
         <PiRoverLogo />
       </header>
 
-      {/* MAIN CAMERA FEED & OVERLAY LAYOUT */}
-      <div className="flex-1 w-full max-w-6xl mx-auto relative bg-[#0a0a8a] md:rounded-t-2xl overflow-hidden shadow-2xl border-4 border-slate-900">
-        
-        {/* Stream Kamera */}
-        <img src={streamUrl} alt="Robot Feed" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-        
-        {/* Indikator Status Perekaman */}
-        {(isRecordingRef.current || isPlayingRef.current) && (
-          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-            {isRecordingRef.current && <span className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse shadow-lg">MEREKAM</span>}
-            {isPlayingRef.current && <span className="bg-emerald-600 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse shadow-lg">MEMUTAR RUTE</span>}
-          </div>
-        )}
-
-        {/* OVERLAY: TOP BAR */}
-        <div className="absolute top-4 left-0 right-0 flex justify-center z-20 pointer-events-none">
-          <div className="flex gap-2 pointer-events-auto shadow-lg rounded-full bg-slate-900/50 p-1 border border-slate-700/50 backdrop-blur-sm">
-            <button 
-              onClick={() => setControlMode('pc-mobile')} 
-              className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all ${controlMode === 'pc-mobile' ? 'bg-[#b6e9c9] text-slate-900' : 'bg-transparent text-white hover:bg-white/20'}`}
-            >
-              PC/MOBILE
-            </button>
-            <button 
-              onClick={() => setControlMode('gamepad')} 
-              className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all ${controlMode === 'gamepad' ? 'bg-[#b6e9c9] text-slate-900' : 'bg-transparent text-white hover:bg-white/20'}`}
-            >
-              GAMEPAD
-            </button>
-          </div>
-        </div>
-
-        {/* OVERLAY: FULLSCREEN */}
-        <button onClick={toggleFullscreen} className="absolute top-5 right-5 z-20 flex items-center gap-1 text-white text-xs font-bold drop-shadow-md hover:text-emerald-300 pointer-events-auto">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
-          FULLSCREEN
-        </button>
-
-        {/* OVERLAY: BOTTOM LEFT (MOVEMENT CONTROLS) */}
-        <div className="absolute bottom-6 left-6 md:bottom-8 md:left-12 z-20 pointer-events-auto">
-          {controlMode === 'pc-mobile' ? (
-            <div className="flex flex-col items-center gap-2">
-              <button 
-                onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.up = true; }} 
-                onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.up = false; }} 
-                className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] text-white font-extrabold text-2xl rounded-xl shadow-[0_4px_0_#75a884] active:shadow-none active:translate-y-1 transition-all"
-              >
-                W
-              </button>
-              <div className="flex gap-2">
-                <button 
-                  onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.left = true; }} 
-                  onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.left = false; }} 
-                  className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] text-white font-extrabold text-2xl rounded-xl shadow-[0_4px_0_#75a884] active:shadow-none active:translate-y-1 transition-all"
-                >
-                  A
-                </button>
-                <button 
-                  onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.down = true; }} 
-                  onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.down = false; }} 
-                  className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] text-white font-extrabold text-2xl rounded-xl shadow-[0_4px_0_#75a884] active:shadow-none active:translate-y-1 transition-all"
-                >
-                  S
-                </button>
-                <button 
-                  onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.right = true; }} 
-                  onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.right = false; }} 
-                  className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] text-white font-extrabold text-2xl rounded-xl shadow-[0_4px_0_#75a884] active:shadow-none active:translate-y-1 transition-all"
-                >
-                  D
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2 pointer-events-none">
-              <div className="flex gap-2">
-                <div className={`w-16 h-10 rounded-lg flex items-center justify-center font-bold text-lg border-2 transition-colors ${gpVisuals.lt > 0.1 ? 'bg-white text-slate-900 border-white' : 'bg-white/20 text-white border-white/50 backdrop-blur-sm'}`}>LT</div>
-                <div className={`w-16 h-10 rounded-lg flex items-center justify-center font-bold text-lg border-2 transition-colors ${gpVisuals.rt > 0.1 ? 'bg-white text-slate-900 border-white' : 'bg-white/20 text-white border-white/50 backdrop-blur-sm'}`}>RT</div>
-              </div>
-              <div className="w-full bg-white rounded-full p-2 h-14 flex items-center justify-center relative shadow-lg">
-                 <div className="absolute left-3 font-bold text-slate-500">←</div>
-                 <div className="w-10 h-10 bg-red-500 rounded-full transition-transform" style={{ transform: `translateX(${gpVisuals.steer * 40}px)` }}></div>
-                 <div className="absolute right-3 font-bold text-slate-500">→</div>
-              </div>
+      {/* MAIN CAMERA FEED & OVERLAY LAYOUT - DITENGAHKAN DAN DIPERBESAR */}
+      <div className="w-full px-4 md:px-8 flex-1 flex flex-col items-center justify-center relative z-10">
+        <div 
+          ref={containerRef}
+          className={`relative bg-[#0a0a8a] overflow-hidden shadow-2xl transition-all duration-300 ${
+            isFullscreen 
+              ? 'fixed inset-0 z-[150] bg-black border-0 rounded-none w-full h-full' 
+              : 'w-full max-w-7xl aspect-[4/3] md:aspect-video rounded-xl md:rounded-2xl border-4 border-slate-900'
+          }`}
+        >
+          
+          {/* Stream Kamera */}
+          <img src={streamUrl} alt="Robot Feed" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          
+          {/* Indikator Status Perekaman */}
+          {(isRecordingRef.current || isPlayingRef.current) && (
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+              {isRecordingRef.current && <span className="bg-red-600 text-white px-4 py-1.5 rounded-sm text-sm tracking-wider animate-pulse shadow-lg border-2 border-red-800">MEREKAM</span>}
+              {isPlayingRef.current && <span className="bg-emerald-600 text-white px-4 py-1.5 rounded-sm text-sm tracking-wider animate-pulse shadow-lg border-2 border-emerald-800">MEMUTAR RUTE</span>}
             </div>
           )}
-        </div>
 
-        {/* OVERLAY: BOTTOM RIGHT (ACTION CONTROLS) */}
-        <div className="absolute bottom-6 right-6 md:bottom-8 md:right-12 z-20 flex gap-2 md:gap-3 pointer-events-auto">
-          {[
-            { action: 'RECORD', pc: 'V', gp: 'B', color: 'bg-red-500 shadow-[0_4px_0_#b91c1c]', activeColor: 'active:bg-red-600', gpState: gpVisuals.btnB },
-            { action: 'SAVE', pc: 'B', gp: 'Y', color: 'bg-amber-400 shadow-[0_4px_0_#d97706]', activeColor: 'active:bg-amber-500', gpState: gpVisuals.btnY },
-            { action: 'PLAY_FWD', pc: 'N', gp: 'A', color: 'bg-emerald-500 shadow-[0_4px_0_#047857]', activeColor: 'active:bg-emerald-600', gpState: gpVisuals.btnA },
-            { action: 'PLAY_REV', pc: 'M', gp: 'X', color: 'bg-blue-600 shadow-[0_4px_0_#1d4ed8]', activeColor: 'active:bg-blue-700', gpState: gpVisuals.btnX }
-          ].map((btn) => (
-            <div key={btn.action} className="flex flex-col items-center gap-1.5">
-              <span className="text-[9px] md:text-[10px] text-white font-bold drop-shadow-md tracking-wider">
-                {btn.action === 'PLAY_FWD' ? 'PLAY' : btn.action === 'PLAY_REV' ? 'R-PLAY' : btn.action}
-              </span>
+          {/* OVERLAY: TOP BAR */}
+          <div className="absolute top-4 left-0 right-0 flex justify-center z-20 pointer-events-none">
+            <div className="flex gap-2 pointer-events-auto shadow-lg bg-slate-900/70 p-1.5 border-2 border-slate-700/50 backdrop-blur-sm rounded-md">
               <button 
-                onClick={() => handleAction(btn.action as any)}
-                className={`w-12 h-12 md:w-14 md:h-14 ${btn.color} ${btn.activeColor} ${controlMode === 'gamepad' && btn.gpState ? 'translate-y-1 shadow-none brightness-75' : ''} text-white font-extrabold text-xl md:text-2xl rounded-xl active:shadow-none active:translate-y-1 transition-all flex items-center justify-center`}
+                onClick={() => setControlMode('pc-mobile')} 
+                className={`px-4 py-1.5 rounded-sm text-sm tracking-wider transition-all ${controlMode === 'pc-mobile' ? 'bg-[#b6e9c9] text-slate-900' : 'bg-transparent text-white hover:bg-white/20'}`}
               >
-                {controlMode === 'pc-mobile' ? btn.pc : btn.gp}
+                PC/MOBILE
+              </button>
+              <button 
+                onClick={() => setControlMode('gamepad')} 
+                className={`px-4 py-1.5 rounded-sm text-sm tracking-wider transition-all ${controlMode === 'gamepad' ? 'bg-[#b6e9c9] text-slate-900' : 'bg-transparent text-white hover:bg-white/20'}`}
+              >
+                GAMEPAD
               </button>
             </div>
-          ))}
+          </div>
+
+          {/* OVERLAY: FULLSCREEN TOGGLE */}
+          <button onClick={toggleFullscreen} className="absolute top-5 right-5 z-20 flex items-center gap-2 text-white text-sm tracking-widest drop-shadow-md hover:text-emerald-300 pointer-events-auto bg-slate-900/50 px-3 py-1.5 rounded-sm border border-white/20">
+            {isFullscreen ? 'KELUAR' : 'FULLSCREEN'}
+          </button>
+
+          {/* OVERLAY: BOTTOM LEFT (MOVEMENT CONTROLS) */}
+          <div className="absolute bottom-6 left-6 md:bottom-8 md:left-8 z-20 pointer-events-auto">
+            {controlMode === 'pc-mobile' ? (
+              <div className="flex flex-col items-center gap-2">
+                <button 
+                  onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.up = true; }} 
+                  onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.up = false; }} 
+                  className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] text-slate-900 text-3xl rounded-sm shadow-[4px_4px_0_#75a884] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900 flex items-center justify-center pb-1"
+                >
+                  W
+                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.left = true; }} 
+                    onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.left = false; }} 
+                    className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] text-slate-900 text-3xl rounded-sm shadow-[4px_4px_0_#75a884] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900 flex items-center justify-center pb-1"
+                  >
+                    A
+                  </button>
+                  <button 
+                    onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.down = true; }} 
+                    onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.down = false; }} 
+                    className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] text-slate-900 text-3xl rounded-sm shadow-[4px_4px_0_#75a884] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900 flex items-center justify-center pb-1"
+                  >
+                    S
+                  </button>
+                  <button 
+                    onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.right = true; }} 
+                    onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.right = false; }} 
+                    className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] text-slate-900 text-3xl rounded-sm shadow-[4px_4px_0_#75a884] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900 flex items-center justify-center pb-1"
+                  >
+                    D
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 pointer-events-none">
+                <div className="flex gap-2">
+                  <div className={`w-16 h-10 rounded-sm flex items-center justify-center text-xl border-2 transition-colors ${gpVisuals.lt > 0.1 ? 'bg-white text-slate-900 border-slate-900' : 'bg-slate-900/50 text-white border-white/50 backdrop-blur-sm'}`}>LT</div>
+                  <div className={`w-16 h-10 rounded-sm flex items-center justify-center text-xl border-2 transition-colors ${gpVisuals.rt > 0.1 ? 'bg-white text-slate-900 border-slate-900' : 'bg-slate-900/50 text-white border-white/50 backdrop-blur-sm'}`}>RT</div>
+                </div>
+                <div className="w-full bg-slate-900/80 rounded-sm p-2 h-14 flex items-center justify-center relative shadow-lg border-2 border-white/20">
+                   <div className="absolute left-3 text-white/50">L</div>
+                   <div className="w-8 h-8 bg-red-500 rounded-sm transition-transform border-2 border-slate-900" style={{ transform: `translateX(${gpVisuals.steer * 40}px)` }}></div>
+                   <div className="absolute right-3 text-white/50">R</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* OVERLAY: BOTTOM RIGHT (ACTION CONTROLS) */}
+          <div className="absolute bottom-6 right-6 md:bottom-8 md:right-8 z-20 flex gap-2 md:gap-3 pointer-events-auto">
+            {[
+              { action: 'RECORD', pc: 'V', gp: 'B', color: 'bg-[#f87171] shadow-[4px_4px_0_#b91c1c]', activeColor: 'active:bg-red-500', gpState: gpVisuals.btnB },
+              { action: 'SAVE', pc: 'B', gp: 'Y', color: 'bg-[#fbbf24] shadow-[4px_4px_0_#d97706]', activeColor: 'active:bg-amber-500', gpState: gpVisuals.btnY },
+              { action: 'PLAY_FWD', pc: 'N', gp: 'A', color: 'bg-[#34d399] shadow-[4px_4px_0_#047857]', activeColor: 'active:bg-emerald-500', gpState: gpVisuals.btnA },
+              { action: 'PLAY_REV', pc: 'M', gp: 'X', color: 'bg-[#60a5fa] shadow-[4px_4px_0_#1d4ed8]', activeColor: 'active:bg-blue-500', gpState: gpVisuals.btnX }
+            ].map((btn) => (
+              <div key={btn.action} className="flex flex-col items-center gap-2">
+                <span className="text-[10px] md:text-xs text-white tracking-widest bg-slate-900/50 px-1.5 py-0.5 rounded-sm">
+                  {btn.action === 'PLAY_FWD' ? 'PLAY' : btn.action === 'PLAY_REV' ? 'R-PLAY' : btn.action}
+                </span>
+                <button 
+                  onClick={() => handleAction(btn.action as any)}
+                  className={`w-12 h-12 md:w-14 md:h-14 ${btn.color} ${btn.activeColor} ${controlMode === 'gamepad' && btn.gpState ? 'translate-x-1 translate-y-1 shadow-none brightness-90' : ''} text-slate-900 text-2xl md:text-3xl rounded-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900 flex items-center justify-center pb-1`}
+                >
+                  {controlMode === 'pc-mobile' ? btn.pc : btn.gp}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* FOOTER TEXT */}
-      <footer className="w-full py-4 bg-emerald-50 flex flex-col items-center justify-center text-center px-4 relative z-0">
-        <h3 className="font-extrabold text-slate-900 tracking-widest text-[10px] md:text-sm uppercase">
+      <footer className="w-full py-6 md:py-8 flex flex-col items-center justify-center text-center px-4 relative z-0">
+        <h3 className="text-slate-600 tracking-widest text-xs md:text-sm uppercase mb-1">
           LAB INSTRUMENTASI ELEKTRONIKA & KECERDASAN BUATAN
         </h3>
-        <p className="font-extrabold text-slate-900 tracking-widest text-[10px] md:text-sm uppercase">
+        <p className="text-slate-600 tracking-widest text-xs md:text-sm uppercase">
           PROGRAM STUDI TEKNIK ELEKTRO
         </p>
       </footer>

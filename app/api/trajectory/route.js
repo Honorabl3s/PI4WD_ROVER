@@ -1,29 +1,30 @@
+import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-// File JSON akan disimpan di root direktori proyek Next.js
-const filePath = path.join(process.cwd(), 'perjalanan.json');
+// Lokasi penyimpanan file di dalam folder utama proyek
+const dataFilePath = path.join(process.cwd(), 'trajectory.json');
 
-// Menerima data dari Tombol Y (Save)
-export async function POST(req) {
-  try {
-    const data = await req.json();
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-    return Response.json({ success: true, message: 'Data perjalanan berhasil disimpan!' });
-  } catch (error) {
-    return Response.json({ success: false, error: 'Gagal menyimpan data' }, { status: 500 });
-  }
+// Fungsi GET untuk PLAY (membaca rute)
+export async function GET() {
+    try {
+        if (!fs.existsSync(dataFilePath)) {
+            return NextResponse.json([]);
+        }
+        const fileData = fs.readFileSync(dataFilePath, 'utf8');
+        return NextResponse.json(JSON.parse(fileData));
+    } catch (error) {
+        return NextResponse.json({ error: 'Gagal membaca data' }, { status: 500 });
+    }
 }
 
-// Membaca data untuk Tombol A & X (Playback)
-export async function GET() {
-  try {
-    if (!fs.existsSync(filePath)) {
-      return Response.json([]); // Kembalikan array kosong jika belum ada rekaman
+// Fungsi POST untuk SAVE (menyimpan rute)
+export async function POST(request) {
+    try {
+        const data = await request.json();
+        fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), 'utf8');
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        return NextResponse.json({ error: 'Gagal menyimpan data' }, { status: 500 });
     }
-    const fileData = fs.readFileSync(filePath, 'utf-8');
-    return Response.json(JSON.parse(fileData));
-  } catch (error) {
-    return Response.json({ success: false, error: 'Gagal membaca data' }, { status: 500 });
-  }
 }
