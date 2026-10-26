@@ -117,18 +117,48 @@ export default function RobotDashboard() {
     } finally { stopRobot(); isPlayingRef.current = false; }
   };
 
-  const handleAction = (action: 'RECORD' | 'SAVE' | 'PLAY_FWD' | 'PLAY_REV') => {
+  const handleAction = async (action: 'RECORD' | 'SAVE' | 'PLAY_FWD' | 'PLAY_REV') => {
     if (action === 'PLAY_FWD' || action === 'PLAY_REV') {
-        if (isPlayingRef.current) { isPlayingRef.current = false; stopRobot(); }
-        else if (!isSavingRef.current && !isRecordingRef.current) executePlayback(action === 'PLAY_REV');
+        if (isPlayingRef.current) { 
+            isPlayingRef.current = false; 
+            stopRobot(); 
+        }
+        else if (!isSavingRef.current && !isRecordingRef.current) {
+            executePlayback(action === 'PLAY_REV');
+        }
     } else if (action === 'RECORD') {
         if (!isRecordingRef.current && !isPlayingRef.current && !isSavingRef.current) {
-            isRecordingRef.current = true; trajectoryRef.current = [];
+            isRecordingRef.current = true; 
+            trajectoryRef.current = [];
             lastRecordedTicksRef.current = { l: currentTicksRef.current.l, r: currentTicksRef.current.r };
-            activeMotionRef.current = 'STOP'; lastCommandRef.current = { x: 0, y: 0 }; stopRobot();
+            activeMotionRef.current = 'STOP'; 
+            lastCommandRef.current = { x: 0, y: 0 }; 
+            stopRobot();
         }
     } else if (action === 'SAVE') {
-        if (isRecordingRef.current) { isRecordingRef.current = false; }
+        if (isRecordingRef.current) {
+            isRecordingRef.current = false;
+            isSavingRef.current = true;
+            
+            if (trajectoryRef.current.length > 0) {
+                try {
+                    const res = await fetch('/api/trajectory', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(trajectoryRef.current)
+                    });
+                    
+                    if (res.ok) alert('Rute berhasil disimpan!');
+                    else alert('Gagal menyimpan rute.');
+                } catch (error) {
+                    console.error('Save error:', error);
+                    alert('Terjadi kesalahan sistem saat menyimpan.');
+                }
+            } else {
+                alert('Tidak ada data rute untuk disimpan (robot belum bergerak).');
+            }
+            isSavingRef.current = false;
+        }
     }
   };
 
