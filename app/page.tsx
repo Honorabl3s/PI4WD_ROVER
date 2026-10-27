@@ -231,7 +231,8 @@ export default function RobotDashboard() {
           setGpVisuals({ lt: gpLT, rt: gpRT, steer: gpSteer, btnA: gpA, btnB: gpB, btnX: gpX, btnY: gpY });
         }
       } else if (controlMode === 'pc-mobile') {
-        currentY = (keysRef.current.down ? 1 : 0) - (keysRef.current.up ? -1 : 0); 
+        // W (up) menghasilkan 1, S (down) menghasilkan -1
+        currentY = (keysRef.current.up ? 1 : 0) - (keysRef.current.down ? 1 : 0); 
         currentX = (keysRef.current.right ? 1 : 0) - (keysRef.current.left ? 1 : 0); 
       }
 
