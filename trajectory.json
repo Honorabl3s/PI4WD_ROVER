@@ -1,0 +1,16 @@
+[
+  {
+    "x": 1,
+    "y": 0,
+    "target_ticks_l": 57,
+    "target_ticks_r": 58,
+    "motion": "TURN_RIGHT"
+  },
+  {
+    "x": -1,
+    "y": 0,
+    "target_ticks_l": 6,
+    "target_ticks_r": 6,
+    "motion": "TURN_LEFT"
+  }
+]

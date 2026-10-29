@@ -35,7 +35,7 @@ type MotionType = 'FORWARD' | 'REVERSE' | 'TURN_LEFT' | 'TURN_RIGHT' | 'STOP';
 type TrajectoryStep = { x: number; y: number; target_ticks_l: number; target_ticks_r: number; motion?: MotionType; };
 
 export default function RobotDashboard() {
-  const PI_IP = '192.168.0.105';
+  const PI_IP = '192.168.11.110';
   const streamUrl = `http://${PI_IP}:8080/stream`;
 
   const [isLoading, setIsLoading] = useState(true);
