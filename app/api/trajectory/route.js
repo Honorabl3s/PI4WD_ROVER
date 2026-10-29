@@ -2,10 +2,8 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-// Lokasi penyimpanan file di dalam folder utama proyek
 const dataFilePath = path.join(process.cwd(), 'trajectory.json');
 
-// Fungsi GET untuk PLAY (membaca rute)
 export async function GET() {
     try {
         if (!fs.existsSync(dataFilePath)) {
@@ -18,7 +16,6 @@ export async function GET() {
     }
 }
 
-// Fungsi POST untuk SAVE (menyimpan rute)
 export async function POST(request) {
     try {
         const data = await request.json();
