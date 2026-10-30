@@ -418,7 +418,7 @@ export default function RobotDashboard() {
         </div>
       </div>
 
-      {/* FOOTER TEXT */}
+      {/* FOOTER TEXT FIX */}
       <footer className="w-full py-6 md:py-8 flex flex-col items-center justify-center text-center px-4 relative z-0">
         <h3 className="text-slate-600 tracking-widest text-xs md:text-sm uppercase mb-1">
           LABORATORIUM INSTRUMENTASI ELEKTRONIKA & KECERDASAN BUATAN
