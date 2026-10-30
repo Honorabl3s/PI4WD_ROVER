@@ -8,17 +8,14 @@ const pixelify = Pixelify_Sans({
   weight: ['400', '500', '600', '700'],
 });
 
-// ==========================================
-// A. KOMPONEN LOGO PI4WD ROVER
-// ==========================================
+// KOMPONEN LOGO PI4WD ROVER
 const PiRoverLogo = ({ scale = 1 }: { scale?: number }) => {
   return (
     <div className="flex flex-col items-center select-none" style={{ transform: `scale(${scale})` }}>
-      <div className="flex items-center gap-2 font-extrabold text-3xl md:text-4xl tracking-widest">
-        <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-emerald-500 bg-emerald-100 rounded-sm -rotate-45 shadow-sm"></div>
-        <span className="text-red-600 relative -top-0.5">PI4</span>
-        <span className="text-slate-900">WD ROVER</span>
-        <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-emerald-500 bg-emerald-100 rounded-sm rotate-45 shadow-sm"></div>
+      <div className="flex items-center font-extrabold text-3xl md:text-5xl tracking-widest">
+        <span className="text-red-600 relative -top-0.4">PI</span>
+        <span className="text-slate-900">4WD ROVER</span>
+        
       </div>
     </div>
   );
@@ -35,7 +32,7 @@ type MotionType = 'FORWARD' | 'REVERSE' | 'TURN_LEFT' | 'TURN_RIGHT' | 'STOP';
 type TrajectoryStep = { x: number; y: number; target_ticks_l: number; target_ticks_r: number; motion?: MotionType; };
 
 export default function RobotDashboard() {
-  const PI_IP = '192.168.11.110';
+  const PI_IP = '192.168.11.110'; //GANTI IP JIKA ADA SETTING YANG BARU
   const streamUrl = `http://${PI_IP}:8080/stream`;
 
   const [isLoading, setIsLoading] = useState(true);
@@ -231,7 +228,6 @@ export default function RobotDashboard() {
           setGpVisuals({ lt: gpLT, rt: gpRT, steer: gpSteer, btnA: gpA, btnB: gpB, btnX: gpX, btnY: gpY });
         }
       } else if (controlMode === 'pc-mobile') {
-        // W (up) menghasilkan 1, S (down) menghasilkan -1
         currentY = (keysRef.current.up ? 1 : 0) - (keysRef.current.down ? 1 : 0); 
         currentX = (keysRef.current.right ? 1 : 0) - (keysRef.current.left ? 1 : 0); 
       }
@@ -425,10 +421,16 @@ export default function RobotDashboard() {
       {/* FOOTER TEXT */}
       <footer className="w-full py-6 md:py-8 flex flex-col items-center justify-center text-center px-4 relative z-0">
         <h3 className="text-slate-600 tracking-widest text-xs md:text-sm uppercase mb-1">
-          LAB INSTRUMENTASI ELEKTRONIKA & KECERDASAN BUATAN
+          LABORATORIUM INSTRUMENTASI ELEKTRONIKA & KECERDASAN BUATAN
         </h3>
         <p className="text-slate-600 tracking-widest text-xs md:text-sm uppercase">
           PROGRAM STUDI TEKNIK ELEKTRO
+        </p>
+        <p className="text-slate-600 tracking-widest text-xs md:text-sm uppercase">
+          FAKULTAS TEKNIK
+        </p>
+        <p className="text-slate-600 tracking-widest text-xs md:text-sm uppercase font-semibold mt-1">
+          UNIVERSITAS KATOLIK WIDYA MANDALA SURABAYA
         </p>
       </footer>
     </main>
