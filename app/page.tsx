@@ -15,7 +15,6 @@ const PiRoverLogo = ({ scale = 1 }: { scale?: number }) => {
       <div className="flex items-center font-extrabold text-3xl md:text-5xl tracking-widest">
         <span className="text-red-600 relative -top-0.4">PI</span>
         <span className="text-slate-900">4WD ROVER</span>
-        
       </div>
     </div>
   );
@@ -32,12 +31,13 @@ type MotionType = 'FORWARD' | 'REVERSE' | 'TURN_LEFT' | 'TURN_RIGHT' | 'STOP';
 type TrajectoryStep = { x: number; y: number; target_ticks_l: number; target_ticks_r: number; motion?: MotionType; };
 
 export default function RobotDashboard() {
-  const PI_IP = '192.168.11.110'; //GANTI IP JIKA ADA SETTING YANG BARU
+  const PI_IP = '192.168.11.110'; // GANTI IP JIKA ADA SETTING YANG BARU
   const streamUrl = `http://${PI_IP}:8080/stream`;
 
   const [isLoading, setIsLoading] = useState(true);
   const [controlMode, setControlMode] = useState<'pc-mobile' | 'gamepad'>('pc-mobile');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
   
   const [gpVisuals, setGpVisuals] = useState({ lt: 0, rt: 0, steer: 0, btnA: false, btnB: false, btnX: false, btnY: false });
   
@@ -79,7 +79,15 @@ export default function RobotDashboard() {
       const res = await fetch(`/api/trajectory?_t=${Date.now()}`, { method: 'GET', cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
       const data = (await res.json()) as TrajectoryStep[];
-      if (!Array.isArray(data) || data.length === 0) { alert('Data rute kosong!'); return; }
+      if (!Array.isArray(data) || data.length === 0) { 
+        setNotification('DATA RUTE KOSONG!');
+        setTimeout(() => setNotification(null), 3000);
+        return; 
+      }
+      
+      setNotification(reverse ? 'MEMUTAR MUNDUR RUTE' : 'MEMUTAR RUTE');
+      setTimeout(() => setNotification(null), 3000);
+
       const routeData = reverse ? [...data].reverse() : data;
       let lastActiveMotion: MotionType = 'STOP'; 
       for (let i = 0; i < routeData.length; i++) {
@@ -110,7 +118,10 @@ export default function RobotDashboard() {
           await sleep(10);
         }
       }
-    } catch (error) { console.error('Playback Error:', error);
+    } catch (error) { 
+      console.error('Playback Error:', error);
+      setNotification('ERROR SAAT MEMUTAR RUTE');
+      setTimeout(() => setNotification(null), 3000);
     } finally { stopRobot(); isPlayingRef.current = false; }
   };
 
@@ -119,6 +130,8 @@ export default function RobotDashboard() {
         if (isPlayingRef.current) { 
             isPlayingRef.current = false; 
             stopRobot(); 
+            setNotification('PEMUTARAN DIHENTIKAN');
+            setTimeout(() => setNotification(null), 3000);
         }
         else if (!isSavingRef.current && !isRecordingRef.current) {
             executePlayback(action === 'PLAY_REV');
@@ -131,6 +144,9 @@ export default function RobotDashboard() {
             activeMotionRef.current = 'STOP'; 
             lastCommandRef.current = { x: 0, y: 0 }; 
             stopRobot();
+            
+            setNotification('MEMULAI PEREKAMAN');
+            setTimeout(() => setNotification(null), 3000);
         }
     } else if (action === 'SAVE') {
         if (isRecordingRef.current) {
@@ -145,15 +161,19 @@ export default function RobotDashboard() {
                         body: JSON.stringify(trajectoryRef.current)
                     });
                     
-                    if (res.ok) alert('Rute berhasil disimpan!');
-                    else alert('Gagal menyimpan rute.');
+                    if (res.ok) {
+                        setNotification('RUTE BERHASIL DISIMPAN');
+                    } else {
+                        setNotification('GAGAL MENYIMPAN RUTE');
+                    }
                 } catch (error) {
                     console.error('Save error:', error);
-                    alert('Terjadi kesalahan sistem saat menyimpan.');
+                    setNotification('ERROR SAAT MENYIMPAN');
                 }
             } else {
-                alert('Tidak ada data rute untuk disimpan (robot belum bergerak).');
+                setNotification('TIDAK ADA DATA UNTUK DISIMPAN');
             }
+            setTimeout(() => setNotification(null), 3000);
             isSavingRef.current = false;
         }
     }
@@ -299,7 +319,7 @@ export default function RobotDashboard() {
         <PiRoverLogo />
       </header>
 
-      {/* MAIN CAMERA FEED & OVERLAY LAYOUT - DITENGAHKAN DAN DIPERBESAR */}
+      {/* MAIN CAMERA FEED & OVERLAY LAYOUT */}
       <div className="w-full px-4 md:px-8 flex-1 flex flex-col items-center justify-center relative z-10">
         <div 
           ref={containerRef}
@@ -313,11 +333,25 @@ export default function RobotDashboard() {
           {/* Stream Kamera */}
           <img src={streamUrl} alt="Robot Feed" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           
+          {/* OVERLAY: CROSSHAIR (TARGET TENGAH) */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+             <img src="/CrossHair.png" alt="Crosshair" className="w-20 h-20 md:w-24 md:h-24 opacity-80" />
+          </div>
+
           {/* Indikator Status Perekaman */}
           {(isRecordingRef.current || isPlayingRef.current) && (
             <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 flex gap-2">
               {isRecordingRef.current && <span className="bg-red-600 text-white px-4 py-1.5 rounded-sm text-sm tracking-wider animate-pulse shadow-lg border-2 border-red-800">MEREKAM</span>}
               {isPlayingRef.current && <span className="bg-emerald-600 text-white px-4 py-1.5 rounded-sm text-sm tracking-wider animate-pulse shadow-lg border-2 border-emerald-800">MEMUTAR RUTE</span>}
+            </div>
+          )}
+          
+          {/* OVERLAY: NOTIFIKASI TEKS HALUS DI BAWAH TENGAH */}
+          {notification && (
+            <div className="absolute bottom-24 md:bottom-32 left-1/2 -translate-x-1/2 z-30 pointer-events-none transition-opacity duration-300">
+               <span className="bg-slate-900/80 text-emerald-300 border border-emerald-500/50 px-4 py-2 rounded-sm text-sm tracking-widest font-semibold backdrop-blur-sm shadow-lg">
+                  {notification}
+               </span>
             </div>
           )}
 

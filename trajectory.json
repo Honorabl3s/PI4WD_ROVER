@@ -2,15 +2,22 @@
   {
     "x": 1,
     "y": 0,
-    "target_ticks_l": 57,
-    "target_ticks_r": 58,
+    "target_ticks_l": 55,
+    "target_ticks_r": 52,
     "motion": "TURN_RIGHT"
   },
   {
-    "x": -1,
-    "y": 0,
-    "target_ticks_l": 6,
-    "target_ticks_r": 6,
-    "motion": "TURN_LEFT"
+    "x": 0,
+    "y": 1,
+    "target_ticks_l": 38,
+    "target_ticks_r": 39,
+    "motion": "FORWARD"
+  },
+  {
+    "x": 0,
+    "y": -1,
+    "target_ticks_l": 40,
+    "target_ticks_r": 40,
+    "motion": "REVERSE"
   }
 ]
