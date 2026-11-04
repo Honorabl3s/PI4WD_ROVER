@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Roboto_Mono } from "next/font/google";
+// @ts-expect-error CSS imports are handled by Next.js.
 import "./globals.css";
 
 const inter = Inter({
@@ -13,8 +14,8 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Robot UI",
-  description: "Robot Vision Control Dashboard",
+  title: "PI4WD ROVER",
+  description: "Control Center for 4WD Robot",
 };
 
 export default function RootLayout({
