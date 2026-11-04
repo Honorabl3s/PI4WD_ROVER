@@ -333,7 +333,7 @@ export default function RobotDashboard() {
           {/* Stream Kamera */}
           <img src={streamUrl} alt="Robot Feed" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           
-          {/* OVERLAY: CROSSHAIR (TARGET TENGAH) */}
+          {/* OVERLAY: CROSSHAIR */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
              <img src="/CrossHair.png" alt="Crosshair" className="w-20 h-20 md:w-24 md:h-24 opacity-80" />
           </div>
