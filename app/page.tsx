@@ -1,21 +1,17 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Pixelify_Sans } from 'next/font/google';
 
-const pixelify = Pixelify_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-});
-
-// KOMPONEN LOGO PI4WD ROVER
+// KOMPONEN LOGO PI4WD ROVER MENGGUNAKAN GAMBAR ROVER.WEBP
 const PiRoverLogo = ({ scale = 1 }: { scale?: number }) => {
   return (
     <div className="flex flex-col items-center select-none" style={{ transform: `scale(${scale})` }}>
-      <div className="flex items-center font-extrabold text-3xl md:text-5xl tracking-widest">
-        <span className="text-red-600 relative -top-0.4">PI</span>
-        <span className="text-slate-900">4WD ROVER</span>
-      </div>
+      <img 
+        src="/rover.webp" 
+        alt="PI4WD ROVER Logo" 
+        className="h-16 md:h-20 object-contain pointer-events-none drop-shadow-lg" 
+        draggable="false"
+      />
     </div>
   );
 };
@@ -302,13 +298,13 @@ export default function RobotDashboard() {
   return (
     <main 
       onContextMenu={(e) => e.preventDefault()}
-      className={`min-h-screen bg-emerald-50 flex flex-col select-none touch-none overflow-x-hidden ${pixelify.className}`} 
+      className="min-h-screen bg-emerald-50 flex flex-col select-none touch-none overflow-x-hidden font-sans" 
       style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
     >
       {/* LOADING SCREEN */}
       <div className={`fixed inset-0 z-[200] bg-emerald-50 flex flex-col items-center justify-center transition-opacity duration-1000 ease-in-out ${isLoading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <div className="scale-125 md:scale-150"><PiRoverLogo /></div>
-        <div className="mt-16 flex items-center gap-3 text-slate-500 text-sm tracking-widest uppercase">
+        <div className="mt-16 flex items-center gap-3 text-slate-500 text-sm tracking-widest uppercase font-semibold">
           <div className="w-3 h-3 rounded-sm bg-emerald-500 animate-pulse"></div>
           Menghubungkan ke Robot...
         </div>
@@ -340,7 +336,7 @@ export default function RobotDashboard() {
 
           {/* Indikator Status Perekaman */}
           {(isRecordingRef.current || isPlayingRef.current) && (
-            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 flex gap-2 font-bold">
               {isRecordingRef.current && <span className="bg-red-600 text-white px-4 py-1.5 rounded-sm text-sm tracking-wider animate-pulse shadow-lg border-2 border-red-800">MEREKAM</span>}
               {isPlayingRef.current && <span className="bg-emerald-600 text-white px-4 py-1.5 rounded-sm text-sm tracking-wider animate-pulse shadow-lg border-2 border-emerald-800">MEMUTAR RUTE</span>}
             </div>
@@ -357,16 +353,16 @@ export default function RobotDashboard() {
 
           {/* OVERLAY: TOP BAR */}
           <div className="absolute top-4 left-0 right-0 flex justify-center z-20 pointer-events-none">
-            <div className="flex gap-2 pointer-events-auto shadow-lg bg-slate-900/70 p-1.5 border-2 border-slate-700/50 backdrop-blur-sm rounded-md">
+            <div className="flex gap-2 pointer-events-auto shadow-lg bg-slate-900/70 p-1.5 border-2 border-slate-700/50 backdrop-blur-sm rounded-md font-semibold">
               <button 
                 onClick={() => setControlMode('pc-mobile')} 
-                className={`px-4 py-1.5 rounded-sm text-sm tracking-wider transition-all ${controlMode === 'pc-mobile' ? 'bg-[#b6e9c9] text-slate-900' : 'bg-transparent text-white hover:bg-white/20'}`}
+                className={`px-4 py-1.5 rounded-sm text-sm tracking-wider transition-all select-none ${controlMode === 'pc-mobile' ? 'bg-[#b6e9c9] text-slate-900' : 'bg-transparent text-white hover:bg-white/20'}`}
               >
                 PC/MOBILE
               </button>
               <button 
                 onClick={() => setControlMode('gamepad')} 
-                className={`px-4 py-1.5 rounded-sm text-sm tracking-wider transition-all ${controlMode === 'gamepad' ? 'bg-[#b6e9c9] text-slate-900' : 'bg-transparent text-white hover:bg-white/20'}`}
+                className={`px-4 py-1.5 rounded-sm text-sm tracking-wider transition-all select-none ${controlMode === 'gamepad' ? 'bg-[#b6e9c9] text-slate-900' : 'bg-transparent text-white hover:bg-white/20'}`}
               >
                 GAMEPAD
               </button>
@@ -374,7 +370,7 @@ export default function RobotDashboard() {
           </div>
 
           {/* OVERLAY: FULLSCREEN TOGGLE */}
-          <button onClick={toggleFullscreen} className="absolute top-5 right-5 z-20 flex items-center gap-2 text-white text-sm tracking-widest drop-shadow-md hover:text-emerald-300 pointer-events-auto bg-slate-900/50 px-3 py-1.5 rounded-sm border border-white/20">
+          <button onClick={toggleFullscreen} className="absolute top-5 right-5 z-20 flex items-center gap-2 text-white text-sm tracking-widest drop-shadow-md hover:text-emerald-300 pointer-events-auto bg-slate-900/50 px-3 py-1.5 rounded-sm border border-white/20 select-none font-semibold">
             {isFullscreen ? 'KELUAR' : 'FULLSCREEN'}
           </button>
 
@@ -382,44 +378,64 @@ export default function RobotDashboard() {
           <div className="absolute bottom-6 left-6 md:bottom-8 md:left-8 z-20 pointer-events-auto">
             {controlMode === 'pc-mobile' ? (
               <div className="flex flex-col items-center gap-2">
-                <button 
-                  onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.up = true; }} 
-                  onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.up = false; }} 
-                  className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] text-slate-900 text-3xl rounded-sm shadow-[4px_4px_0_#75a884] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900 flex items-center justify-center pb-1"
-                >
-                  W
-                </button>
+                {/* W - MAJU */}
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-white text-[10px] md:text-xs font-bold tracking-widest bg-slate-900/50 px-2 py-0.5 rounded-sm pointer-events-none select-none">W</span>
+                  <button 
+                    onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.up = true; }} 
+                    onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.up = false; }} 
+                    onPointerLeave={() => { keysRef.current.up = false; }}
+                    onPointerCancel={() => { keysRef.current.up = false; }}
+                    className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] rounded-sm shadow-[4px_4px_0_#75a884] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900"
+                    style={{ touchAction: 'none' }}
+                  />
+                </div>
                 <div className="flex gap-2">
-                  <button 
-                    onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.left = true; }} 
-                    onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.left = false; }} 
-                    className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] text-slate-900 text-3xl rounded-sm shadow-[4px_4px_0_#75a884] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900 flex items-center justify-center pb-1"
-                  >
-                    A
-                  </button>
-                  <button 
-                    onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.down = true; }} 
-                    onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.down = false; }} 
-                    className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] text-slate-900 text-3xl rounded-sm shadow-[4px_4px_0_#75a884] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900 flex items-center justify-center pb-1"
-                  >
-                    S
-                  </button>
-                  <button 
-                    onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.right = true; }} 
-                    onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.right = false; }} 
-                    className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] text-slate-900 text-3xl rounded-sm shadow-[4px_4px_0_#75a884] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900 flex items-center justify-center pb-1"
-                  >
-                    D
-                  </button>
+                  {/* A - KIRI */}
+                  <div className="flex flex-col items-center gap-1">
+                    <button 
+                      onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.left = true; }} 
+                      onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.left = false; }} 
+                      onPointerLeave={() => { keysRef.current.left = false; }}
+                      onPointerCancel={() => { keysRef.current.left = false; }}
+                      className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] rounded-sm shadow-[4px_4px_0_#75a884] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900"
+                      style={{ touchAction: 'none' }}
+                    />
+                    <span className="text-white text-[10px] md:text-xs font-bold tracking-widest bg-slate-900/50 px-2 py-0.5 rounded-sm pointer-events-none select-none">A</span>
+                  </div>
+                  {/* S - MUNDUR */}
+                  <div className="flex flex-col items-center gap-1">
+                    <button 
+                      onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.down = true; }} 
+                      onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.down = false; }} 
+                      onPointerLeave={() => { keysRef.current.down = false; }}
+                      onPointerCancel={() => { keysRef.current.down = false; }}
+                      className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] rounded-sm shadow-[4px_4px_0_#75a884] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900"
+                      style={{ touchAction: 'none' }}
+                    />
+                    <span className="text-white text-[10px] md:text-xs font-bold tracking-widest bg-slate-900/50 px-2 py-0.5 rounded-sm pointer-events-none select-none">S</span>
+                  </div>
+                  {/* D - KANAN */}
+                  <div className="flex flex-col items-center gap-1">
+                    <button 
+                      onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); keysRef.current.right = true; }} 
+                      onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); keysRef.current.right = false; }} 
+                      onPointerLeave={() => { keysRef.current.right = false; }}
+                      onPointerCancel={() => { keysRef.current.right = false; }}
+                      className="w-14 h-14 md:w-16 md:h-16 bg-[#a2dfb4] active:bg-[#8bc99d] rounded-sm shadow-[4px_4px_0_#75a884] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900"
+                      style={{ touchAction: 'none' }}
+                    />
+                    <span className="text-white text-[10px] md:text-xs font-bold tracking-widest bg-slate-900/50 px-2 py-0.5 rounded-sm pointer-events-none select-none">D</span>
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col gap-2 pointer-events-none">
-                <div className="flex gap-2">
+              <div className="flex flex-col gap-2 pointer-events-none select-none">
+                <div className="flex gap-2 font-bold">
                   <div className={`w-16 h-10 rounded-sm flex items-center justify-center text-xl border-2 transition-colors ${gpVisuals.lt > 0.1 ? 'bg-white text-slate-900 border-slate-900' : 'bg-slate-900/50 text-white border-white/50 backdrop-blur-sm'}`}>LT</div>
                   <div className={`w-16 h-10 rounded-sm flex items-center justify-center text-xl border-2 transition-colors ${gpVisuals.rt > 0.1 ? 'bg-white text-slate-900 border-slate-900' : 'bg-slate-900/50 text-white border-white/50 backdrop-blur-sm'}`}>RT</div>
                 </div>
-                <div className="w-full bg-slate-900/80 rounded-sm p-2 h-14 flex items-center justify-center relative shadow-lg border-2 border-white/20">
+                <div className="w-full bg-slate-900/80 rounded-sm p-2 h-14 flex items-center justify-center relative shadow-lg border-2 border-white/20 font-bold">
                    <div className="absolute left-3 text-white/50">L</div>
                    <div className="w-8 h-8 bg-red-500 rounded-sm transition-transform border-2 border-slate-900" style={{ transform: `translateX(${gpVisuals.steer * 40}px)` }}></div>
                    <div className="absolute right-3 text-white/50">R</div>
@@ -436,16 +452,15 @@ export default function RobotDashboard() {
               { action: 'PLAY_FWD', pc: 'N', gp: 'A', color: 'bg-[#34d399] shadow-[4px_4px_0_#047857]', activeColor: 'active:bg-emerald-500', gpState: gpVisuals.btnA },
               { action: 'PLAY_REV', pc: 'M', gp: 'X', color: 'bg-[#60a5fa] shadow-[4px_4px_0_#1d4ed8]', activeColor: 'active:bg-blue-500', gpState: gpVisuals.btnX }
             ].map((btn) => (
-              <div key={btn.action} className="flex flex-col items-center gap-2">
-                <span className="text-[10px] md:text-xs text-white tracking-widest bg-slate-900/50 px-1.5 py-0.5 rounded-sm">
-                  {btn.action === 'PLAY_FWD' ? 'PLAY' : btn.action === 'PLAY_REV' ? 'R-PLAY' : btn.action}
+              <div key={btn.action} className="flex flex-col items-center gap-2 select-none">
+                <span className="text-[10px] md:text-xs text-white tracking-widest bg-slate-900/50 px-1.5 py-0.5 rounded-sm pointer-events-none select-none font-semibold">
+                  {controlMode === 'pc-mobile' ? btn.pc : btn.gp} : {btn.action === 'PLAY_FWD' ? 'PLAY' : btn.action === 'PLAY_REV' ? 'R-PLAY' : btn.action}
                 </span>
                 <button 
                   onClick={() => handleAction(btn.action as any)}
-                  className={`w-12 h-12 md:w-14 md:h-14 ${btn.color} ${btn.activeColor} ${controlMode === 'gamepad' && btn.gpState ? 'translate-x-1 translate-y-1 shadow-none brightness-90' : ''} text-slate-900 text-2xl md:text-3xl rounded-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900 flex items-center justify-center pb-1`}
-                >
-                  {controlMode === 'pc-mobile' ? btn.pc : btn.gp}
-                </button>
+                  className={`w-12 h-12 md:w-14 md:h-14 ${btn.color} ${btn.activeColor} ${controlMode === 'gamepad' && btn.gpState ? 'translate-x-1 translate-y-1 shadow-none brightness-90' : ''} rounded-sm active:shadow-none active:translate-x-1 active:translate-y-1 transition-all border-2 border-slate-900`}
+                  style={{ touchAction: 'none' }}
+                />
               </div>
             ))}
           </div>
@@ -454,16 +469,16 @@ export default function RobotDashboard() {
 
       {/* FOOTER TEXT FIX */}
       <footer className="w-full py-6 md:py-8 flex flex-col items-center justify-center text-center px-4 relative z-0">
-        <h3 className="text-slate-600 tracking-widest text-xs md:text-sm uppercase mb-1">
+        <h3 className="text-slate-600 tracking-widest text-xs md:text-sm uppercase mb-1 font-bold">
           LABORATORIUM INSTRUMENTASI ELEKTRONIKA & KECERDASAN BUATAN
         </h3>
-        <p className="text-slate-600 tracking-widest text-xs md:text-sm uppercase">
+        <p className="text-slate-600 tracking-widest text-xs md:text-sm uppercase font-medium">
           PROGRAM STUDI TEKNIK ELEKTRO
         </p>
-        <p className="text-slate-600 tracking-widest text-xs md:text-sm uppercase">
+        <p className="text-slate-600 tracking-widest text-xs md:text-sm uppercase font-medium">
           FAKULTAS TEKNIK
         </p>
-        <p className="text-slate-600 tracking-widest text-xs md:text-sm uppercase font-semibold mt-1">
+        <p className="text-slate-600 tracking-widest text-xs md:text-sm uppercase font-extrabold mt-1">
           UNIVERSITAS KATOLIK WIDYA MANDALA SURABAYA
         </p>
       </footer>
